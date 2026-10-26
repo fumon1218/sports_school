@@ -270,13 +270,14 @@ const player = new THREE.Group(); player.position.set(PLAYER_START.x, 0, PLAYER_
 const playerBody = new THREE.Group(); player.add(playerBody);
 const npc = new THREE.Group(); npc.position.set(-3, 0, 16); scene.add(npc);
 let playerRig = null, npcRig = null;
+let avatarTok = 0;
 function setAvatar(key) {
-  settings.avatar = key; store.set('avatar', key);
+  const tok = ++avatarTok; settings.avatar = key; store.set('avatar', key);
   playerBody.clear(); npc.clear(); playerRig = null; npcRig = null;
   const other = PARTNER[key] || 'boy';
   const fb = P.buildPlayer(); playerBody.add(fb);
-  loadModel(AVATARS[key].model).then((src) => { if (!src) return; playerBody.remove(fb); const m = fitModel(src, AVATARS[key].size); playerBody.add(m); playerRig = AVATARS[key].hop ? null : autoRig(m, key); });
-  loadModel(AVATARS[other].model).then((src) => { if (!src) return; const m = fitModel(src, AVATARS[other].size); npc.add(m); npcRig = autoRig(m, other); });
+  loadModel(AVATARS[key].model).then((src) => { if (!src || tok !== avatarTok) return; playerBody.remove(fb); const m = fitModel(src, AVATARS[key].size); playerBody.add(m); playerRig = AVATARS[key].hop ? null : autoRig(m, key); });
+  loadModel(AVATARS[other].model).then((src) => { if (!src || tok !== avatarTok) return; const m = fitModel(src, AVATARS[other].size); npc.add(m); npcRig = autoRig(m, other); });
 }
 
 /* ---------- 길 찾기 (자동 안내용) ---------- */

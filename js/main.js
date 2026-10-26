@@ -64,8 +64,29 @@ function fitModel(src, size, rotY = 0) {
 function place(cfg, fallbackFn) {
   const holder = new THREE.Group(); holder.position.set(cfg.x, cfg.y || 0, cfg.z); scene.add(holder);
   const ph = fallbackFn ? fallbackFn(cfg) : null; if (ph) holder.add(ph);
-  loadModel(cfg.model).then((src) => { if (!src) return; if (ph) holder.remove(ph); holder.add(fitModel(src, cfg.size, cfg.rotY)); });
+  loadModel(cfg.model).then((src) => { if (!src) return; if (ph) holder.remove(ph); holder.add(fitModel(src, cfg.size, cfg.rotY)); if (cfg.onLoad) cfg.onLoad(holder); });
   return holder;
+}
+// 모델 윗면 높이 지도: 운동장처럼 땅보다 솟은 곳에서 사람·공이 박히지 않게, 위에서 광선을 쏴서 한 번 재어 둬요.
+const HMAPS = [];
+// 구역별로 따로 재요: {cx,cz,w,d,maxY} 안에서 maxY 이하의 첫 윗면 높이
+function buildHM(holder, o) {
+  holder.updateMatrixWorld(true);
+  const C = 0.7, x0 = o.cx - o.w / 2, z0 = o.cz - o.d / 2, nx = Math.ceil(o.w / C) + 1, nz = Math.ceil(o.d / C) + 1, arr = new Float32Array(nx * nz);
+  const rc = new THREE.Raycaster(), org = new THREE.Vector3(), dir = new THREE.Vector3(0, -1, 0); let j = 0;
+  const step = () => {
+    for (let n = 0; n < 3 && j < nz; n++, j++) for (let i = 0; i < nx; i++) {
+      rc.set(org.set(x0 + i * C, 30, z0 + j * C), dir); const hits = rc.intersectObject(holder, true); let y = 0;
+      for (const h of hits) if (h.point.y <= o.maxY) { y = Math.max(0, h.point.y); break; } arr[j * nx + i] = y;
+    }
+    if (j < nz) setTimeout(step, 0); else HMAPS.push({ x0, z0, C, nx, nz, arr, x1: x0 + o.w, z1: z0 + o.d });
+  };
+  step();
+}
+const buildHeightMap = (holder) => buildHM(holder, { cx: holder.position.x, cz: holder.position.z, w: 33, d: 23, maxY: 1.0 });
+function heightAt(x, z) {
+  for (const g of HMAPS) { if (x < g.x0 || x > g.x1 || z < g.z0 || z > g.z1) continue; const i = Math.round((x - g.x0) / g.C), j = Math.round((z - g.z0) / g.C); if (i >= 0 && j >= 0 && i < g.nx && j < g.nz) return g.arr[j * g.nx + i]; }
+  return 0;
 }
 const footprint = (c) => { const swap = Math.abs((c.rotY || 0) % 180) === 90; const w = c.size * c.dim[0], d = c.size * c.dim[2]; return { w: swap ? d : w, d: swap ? w : d, h: c.size * c.dim[1] }; };
 const courtFallback = (c) => {
@@ -109,14 +130,11 @@ function addLabel(text, x, y, z, scale = 1) {
   const s = P.labelSprite(text); labelSprites.push(s); s.position.set(x, y, z); s.scale.multiplyScalar(scale); scene.add(s); return s;
 }
 BUILDINGS.forEach((b) => {
-  place(b, blockFallback);
+  place(b.id === 'stadium' ? { ...b, onLoad: buildHeightMap } : b.id === 'swimming' ? { ...b, onLoad: (h) => buildHM(h, { cx: 30, cz: -18, w: 21, d: 21, maxY: 1.7 }) } : b, blockFallback);
   const f = footprint(b);
   if (b.ring) { // 운동장: 타원 울타리를 따라 막고, 동쪽 한 곳은 열어 둠
     const n = 46; for (let i = 0; i < n; i++) { const a = (i + 0.5) / n * Math.PI * 2; if (Math.abs(a - Math.PI * 2 * (a > Math.PI ? 1 : 0)) < b.ring.gap) continue; circles.push({ x: b.x + Math.cos(a) * b.ring.a, z: b.z + Math.sin(a) * b.ring.b, r: 0.9 }); }
-  } else if (b.open) { // 수영장: 바깥 둘레만 막고 안으로 들어갈 수 있게
-    const f2 = footprint(b); const x0 = b.x - f2.w / 2 + 0.3, x1 = b.x + f2.w / 2 - 0.3, z0 = b.z - f2.d / 2 + 0.3, z1 = b.z + f2.d / 2 - 0.3;
-    addBox((x0 + x1) / 2, z0, x1 - x0, 0.8); addBox(x1, (z0 + z1) / 2, 0.8, z1 - z0);
-    addBox(x0, (z0 + z1) / 2, 0.8, z1 - z0); addBox(x0 + (x1 - x0) * 0.74, z1, (x1 - x0) * 0.52, 0.8);
+  } else if (b.open) { // 수영장: 벽 없이 자유롭게 드나들 수 있음
   } else addBox(b.x, b.z, f.w * 0.94, f.d * 0.94, { id: b.id, label: b.label, locked: !!b.soon });
   addLabel(b.label, b.x, f.h + 2.4, b.z + f.d * 0.12);
   if (b.zone) zones.push({ id: b.id, kind: b.zone.kind, sport: b.zone.sport, x: b.zone.x, z: b.zone.z, r: 2.4, label: b.zone.label || b.label, open: true, tip: { x: b.zone.x, y: Math.max(f.h * 0.5, 5.5), z: b.zone.z } });
@@ -127,8 +145,7 @@ BUILDINGS.forEach((b) => {
   place(GATE, (c) => { const g = P.buildGate({}); g.scale.setScalar(1.3); return g; });
   const f = footprint(GATE), half = f.w / 2, zf = GATE.z + f.d / 2 - 1.2;
   addBox(-(half + GATE.open) / 2 - GATE.open / 2 + 0.2, zf, half - GATE.open, 1.6); addBox((half + GATE.open) / 2 + GATE.open / 2 - 0.2, zf, half - GATE.open, 1.6);
-  // 정문 양옆 산울타리
-  for (const sx of [-1, 1]) { const w = CAMPUS.maxX - half - 0.4; const h = P.box(w, 1.3, 1.1, P.mat(0x63b565)); const cx = sx * (half + w / 2 + 0.2); h.position.set(cx, 0.65, zf); scene.add(h); addBox(cx, zf, w, 1.1); }
+  // (정문 양옆 산울타리는 없앴어요: 어디로든 걸어갈 수 있게)
   addLabel(CONFIG.schoolName, GATE.x, f.h + 2.2, GATE.z + f.d * 0.3, 1.1);
 }
 
@@ -157,7 +174,7 @@ zones.forEach((z) => {
 /* ---------- 소품 ---------- */
 const decorHolder = {}, decorCircle = {};
 DECOR.forEach((d) => {
-  decorHolder[d.id] = place(d, (c) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.4, 12), P.mat(0xdddddd)); m.position.y = 0.7; return m; });
+  decorHolder[d.id] = place(d.id === 'patio' ? { ...d, onLoad: (h) => buildHM(h, { cx: d.x, cz: d.z, w: d.size + 1, d: d.size + 1, maxY: 1.2 }) } : d, (c) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.4, 12), P.mat(0xdddddd)); m.position.y = 0.7; return m; });
   const f = footprint(d);
   if (d.r) { const c = { x: d.x, z: d.z, r: d.r }; circles.push(c); decorCircle[d.id] = c; } else if (!d.walk) addBox(d.x, d.z, f.w * 0.9, f.d * 0.9);
 });
@@ -172,9 +189,6 @@ GREEN.forEach(([x, z], i) => { place({ model: TREE_SET[i % TREE_SET.length], siz
 (function surroundings() {
   const hedge = (x, z, w, d) => { const h = P.box(w, 1.3, d, P.mat(0x63b565)); h.position.set(x, 0.65, z); scene.add(h); addBox(x, z, w, d); };
   const cw = CAMPUS.maxX - CAMPUS.minX, ch = CAMPUS.maxZ - CAMPUS.minZ;
-  hedge(0, CAMPUS.minZ, cw, 1.1);                                          // 북쪽
-  hedge(CAMPUS.minX, (CAMPUS.minZ + CAMPUS.maxZ) / 2, 1.1, ch);              // 서쪽
-  hedge(CAMPUS.maxX, (CAMPUS.minZ + CAMPUS.maxZ) / 2, 1.1, ch);              // 동쪽
   // 호수
   const lake = new THREE.Mesh(new THREE.CircleGeometry(LAKE.r, 48), new THREE.MeshStandardMaterial({ color: 0x6cc3ea, roughness: 0.25, metalness: 0.1 }));
   lake.rotation.x = -Math.PI / 2; lake.position.set(LAKE.x, 0.04, LAKE.z); lake.receiveShadow = true; scene.add(lake);
@@ -204,7 +218,7 @@ GREEN.forEach(([x, z], i) => { place({ model: TREE_SET[i % TREE_SET.length], siz
 
 /* ---------- 구조물과 상호작용: 벤치, 카페 의자, 수영장 의자·출발대, 축구공, 파란 휠체어 ---------- */
 const spots = [];
-const addSpot = (o) => { const sp = { r: 2.3, y: 0, ...o }; sp.tip = sp.tip || { x: sp.x, y: 2.8, z: sp.z }; spots.push(sp); return sp; };
+const addSpot = (o) => { const sp = { r: 2.3, ...o }; sp.tip = sp.tip || { x: sp.x, y: 2.8, z: sp.z }; spots.push(sp); return sp; };
 const gy_ = (x, z) => 0; // (바닥 높이는 아래 groundY 에서 계산)
 // 벚나무 아래 벤치
 CHERRY.forEach(([cx, cz], i) => {
@@ -221,11 +235,11 @@ CHERRY.forEach(([cx, cz], i) => {
 { const pa = DECOR.find((d) => d.id === 'patio'); const F = pa.size;
   for (const [tx, tz] of [[-0.305, 0.02], [0.305, 0.02]]) { const cx = pa.x + tx * F, cz = pa.z + tz * F;
     for (const a of [0, 1, 2, 3]) { const ang = a * Math.PI / 2 + Math.PI / 4, ex = cx + Math.cos(ang) * 1.55, ez = cz + Math.sin(ang) * 1.45;
-      addSpot({ kind: 'sit', x: ex, z: ez, face: Math.atan2(cx - ex, cz - ez), stand: { x: cx + Math.cos(ang) * 2.8, z: cz + Math.sin(ang) * 2.7 }, label: '앉기', ico: '☕', r: 1.7, camOff: [5.2, 8.8], say: '카페 의자에 앉았어요. 걸으면 일어나요.', tip: { x: ex, y: 2.2, z: ez } }); } } }
+      addSpot({ kind: 'sit', x: ex, z: ez, face: Math.atan2(cx - ex, cz - ez), stand: { x: cx + Math.cos(ang) * 2.8, z: cz + Math.sin(ang) * 2.7 }, label: '앉기', ico: '☕', r: 1.7, camFront: [4.2, 6.5], say: '카페 의자에 앉았어요. 걸으면 일어나요.', tip: { x: ex, y: 2.2, z: ez } }); } } }
 // 수영장: 승강 의자(앉기), 출발대(올라서서 수영장 정면 보기), 물속 걷기
 const POOL = { deck: { x0: 20.4, x1: 39.6, z0: -27.6, z1: -8.4 }, water: { x0: 21.9, x1: 36.9, z0: -25.2, z1: -9.6 }, chair: { x: 37.0, z: -15.4 } };
-addSpot({ kind: 'sit', x: POOL.chair.x, z: POOL.chair.z, y: 0.28, face: -Math.PI / 2, stand: { x: 38.5, z: POOL.chair.z + 1.2, y: 0.28 }, label: '앉기', ico: '♿', r: 2.4, camOff: [6, 8], say: '수영장 승강 의자예요. 휠체어 친구들이 물에 들어갈 때 써요!', tip: { x: POOL.chair.x, y: 3, z: POOL.chair.z } });
-for (const bx of [24.2, 28.6, 33.2]) addSpot({ kind: 'view', x: bx, z: -26.3, y: 1.15, face: 0, stand: { x: bx, z: -23.6, y: -0.2 }, label: '출발대 서기', ico: '🏊', r: 1.9, say: '출발대 위에서 수영장 정면을 바라봐요! 걸으면 내려와요.', tip: { x: bx, y: 3, z: -26.3 } });
+addSpot({ kind: 'sit', x: POOL.chair.x, z: POOL.chair.z, y: 0.95, face: -Math.PI / 2, stand: { x: 38.8, z: POOL.chair.z + 1.2 }, label: '앉기', ico: '♿', r: 2.4, camFront: [4.5, 7], say: '수영장 승강 의자예요. 휠체어 친구들이 물에 들어갈 때 써요!', tip: { x: POOL.chair.x, y: 3, z: POOL.chair.z } });
+for (const bx of [24.2, 28.6, 33.2]) addSpot({ kind: 'view', x: bx, z: -26.3, y: 3.45, face: 0, stand: { x: bx, z: -23.6 }, label: '출발대 서기', ico: '🏊', r: 1.9, say: '출발대 위에서 수영장 정면을 바라봐요! 걸으면 내려와요.', tip: { x: bx, y: 3, z: -26.3 } });
 // 거리 분위기용 가로등
 for (const [lx, lz] of [[-3.2, 27], [3.2, 27], [-3.2, 20], [3.2, 20], [-16, 13.5], [14, 9.4], [-3.2, -8], [3.2, -8], [-18, -1.5], [18, 1]]) {
   place({ model: 'lamp.glb', size: 4.4, rotY: lx > 0 ? 180 : 0, x: lx, z: lz }, () => { const l = P.box(0.2, 4, 0.2, P.mat(0x55555f)); l.position.y = 2; return l; }); circles.push({ x: lx, z: lz, r: 0.35 });
@@ -353,6 +367,7 @@ function updateCrowd(dt) {
       }
     }
     { const dxp = player.position.x - p.x, dzp = player.position.z - p.z, dp2 = Math.hypot(dxp, dzp); if (dp2 < 4.6 && !settings.calm) c.face = Math.atan2(dxp, dzp); }
+    p.y += (groundY(p.x, p.z) - p.y) * (1 - Math.exp(-10 * dt));
     c.spd += (target - c.spd) * (1 - Math.exp(-6 * dt));
     let da = c.face - c.g.rotation.y; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
     c.g.rotation.y += da * (1 - Math.exp(-8 * dt));
@@ -414,13 +429,14 @@ const vel = new THREE.Vector3(); let facing = 0, walkT = 0, dwell = 0, nearLocke
 let route = null, routeTarget = null; // 자동 안내 경로
 const zoneNear = (px, pz, pad_ = 0) => zones.find((z) => Math.hypot(px - z.x, pz - z.z) < z.r + pad_);
 
-let camMix = 0, bobY = 0, seat = null, sitK = 0, camView = 0, camZoom = 1, riding = false;
+let camYaw = 0, camPitch = 0.8327, camZoomK = 1, camHold = null, camMix = 0, bobY = 0, seat = null, sitK = 0, camView = 0, camZoom = 1, riding = false;
 const racer = { holder: decorHolder.racer, spot: null };
 if (racer.holder) racer.spot = addSpot({ kind: 'ride', x: DECOR.find((d) => d.id === 'racer').x, z: DECOR.find((d) => d.id === 'racer').z, r: 2.6, label: '타기', ico: '🏁', say: '파란 레이싱 휠체어예요! 타기 버튼을 눌러 보세요.', tip: { x: DECOR.find((d) => d.id === 'racer').x, y: 2.6, z: DECOR.find((d) => d.id === 'racer').z } });
 const nearSpot = () => { let best = null, bd = 1e9; for (const sp of spots) { if (sp.kind === 'ride' && riding) continue; const d = Math.hypot(player.position.x - sp.x, player.position.z - sp.z); if (d < sp.r && d < bd) { bd = d; best = sp; } } return best; };
+const seatY = (sp) => sp.y ?? groundY(sp.x, sp.z);
 function sitDown(sp) {
   if (sp.kind === 'ride') return mountRacer();
-  cancelAuto(); vel.set(0, 0, 0); joy.x = joy.y = 0; seat = sp; player.position.set(sp.x, sp.y, sp.z); facing = sp.face; player.rotation.y = facing; say(sp.say, 4.5);
+  cancelAuto(); vel.set(0, 0, 0); joy.x = joy.y = 0; seat = sp; player.position.set(sp.x, seatY(sp), sp.z); facing = sp.face; player.rotation.y = facing; say(sp.say, 4.5);
 }
 function standUp() {
   if (riding) return dismountRacer();
@@ -434,7 +450,7 @@ function dismountRacer() {
   riding = false; const c = decorCircle.racer, h = racer.holder; if (c && h) { c.x = h.position.x; c.z = h.position.z; c.r = 1.2; } if (racer.spot && h) { racer.spot.x = h.position.x; racer.spot.z = h.position.z; racer.spot.tip = { x: h.position.x, y: 2.6, z: h.position.z }; }
   const f = facing; player.position.x += Math.sin(f + Math.PI / 2) * 2.2; player.position.z += Math.cos(f + Math.PI / 2) * 2.2; say('멋진 드라이브였어요!', 2.5);
 }
-const groundY = (x, z) => { if (x > POOL.deck.x0 && x < POOL.deck.x1 && z > POOL.deck.z0 && z < POOL.deck.z1) { const w = POOL.water; return (x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1) ? -0.25 : 0.28; } return 0; };
+const groundY = (x, z) => { if (x > POOL.deck.x0 && x < POOL.deck.x1 && z > POOL.deck.z0 && z < POOL.deck.z1) { const w = POOL.water; if (x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1) return 0.02; } return heightAt(x, z); };
 // 축구
 function kickBall(power, dirx, dirz) { const l = Math.hypot(dirx, dirz) || 1; ball.vx = dirx / l * power; ball.vz = dirz / l * power; ball.hop = 0.001; }
 function nearBall() { return Math.hypot(player.position.x - ball.x, player.position.z - ball.z) < 3.0 && !seat && !riding; }
@@ -451,7 +467,7 @@ function updateBall(dt, sp) {
     if (Math.hypot(p.x - FIELD.cx, p.z - FIELD.cz) > 24 && Math.hypot(ball.vx, ball.vz) < 0.2) { ball.x = FIELD.cx; ball.z = FIELD.cz; }
   }
   if (ball.hop > 0) { ball.hop += dt; if (ball.hop > 0.5) ball.hop = 0; }
-  const spd = Math.hypot(ball.vx, ball.vz); ball.m.position.set(ball.x, 0.5 + (ball.hop ? Math.sin(ball.hop / 0.5 * Math.PI) * 0.5 : 0), ball.z);
+  const spd = Math.hypot(ball.vx, ball.vz); ball.m.position.set(ball.x, heightAt(ball.x, ball.z) + 0.5 + (ball.hop ? Math.sin(ball.hop / 0.5 * Math.PI) * 0.5 : 0), ball.z);
   if (spd > 0.05) { ball.m.rotation.z -= ball.vx * dt / 0.5; ball.m.rotation.x += ball.vz * dt / 0.5; }
   for (const c of confetti) if (c.life > 0) { c.life -= dt; c.m.position.x += c.vx * dt; c.m.position.y += c.vy * dt; c.m.position.z += c.vz * dt; c.vy -= 9 * dt; c.m.rotation.x += 6 * dt; c.m.rotation.y += 4 * dt; if (c.life <= 0 || c.m.position.y < 0) { c.life = 0; c.m.visible = false; } }
 }
@@ -678,16 +694,41 @@ function updateTip() {
   tipEl.hidden = false;
 }
 
+/* ---------- 시점 조절: 끌어서 돌리기, 휠·두 손가락으로 확대, 버튼 ---------- */
+const viewReset = () => { camYaw = 0; camPitch = 0.8327; camZoomK = 1; };
+{ const ptrs = new Map(); let pd = 0;
+  canvas.style.touchAction = 'none';
+  canvas.addEventListener('pointerdown', (e) => { if (mode !== 'world') return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { canvas.setPointerCapture(e.pointerId); } catch (_) {} if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pd = Math.hypot(a.x - b.x, a.y - b.y); } });
+  canvas.addEventListener('pointermove', (e) => { const q = ptrs.get(e.pointerId); if (!q) return; const dx = e.clientX - q.x, dy = e.clientY - q.y; q.x = e.clientX; q.y = e.clientY;
+    if (ptrs.size === 1) { camYaw -= dx * 0.006; camPitch = Math.max(-0.45, Math.min(1.5, camPitch + dy * 0.005)); }
+    else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if (pd > 0) camZoomK = Math.max(0.3, Math.min(2.2, camZoomK * pd / d)); pd = d; } });
+  const up = (e) => { ptrs.delete(e.pointerId); };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', (e) => { if (mode !== 'world') return; e.preventDefault(); camZoomK = Math.max(0.3, Math.min(2.2, camZoomK * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
+  addEventListener('keydown', (e) => { if (e.key === '0' && mode === 'world') viewReset(); });
+}
+{ const wrap = document.createElement('div'); wrap.id = 'view-ctl';
+  wrap.innerHTML = '<button type="button" id="view-btn" aria-label="시점 바꾸기">👁</button><div id="view-panel" hidden>' +
+    [['L', '⟲', '왼쪽'], ['R', '⟳', '오른쪽'], ['U', '⬆', '위에서'], ['D', '⬇', '낮게'], ['I', '＋', '가까이'], ['O', '－', '멀리']].map(([k, i, t]) => `<button type="button" data-h="${k}"><span>${i}</span><small>${t}</small></button>`).join('') +
+    '<button type="button" data-v="sky"><span>☁️</span><small>하늘</small></button><button type="button" data-v="top"><span>🗺️</span><small>땅 위</small></button><button type="button" data-v="reset"><span>↺</span><small>처음</small></button></div>';
+  document.body.appendChild(wrap);
+  const panel = wrap.querySelector('#view-panel'); wrap.querySelector('#view-btn').addEventListener('click', () => { panel.hidden = !panel.hidden; });
+  panel.querySelectorAll('[data-h]').forEach((b) => { const k = b.dataset.h; b.addEventListener('pointerdown', (e) => { camHold = k; e.preventDefault(); e.stopPropagation(); }); for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { if (camHold === k) camHold = null; }); });
+  panel.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => { const v = b.dataset.v; if (v === 'sky') { camPitch = -0.3; camZoomK = 1; } else if (v === 'top') { camPitch = 1.5; camZoomK = 1.1; } else viewReset(); }));
+}
 function frameLoop() {
   requestAnimationFrame(frameLoop);
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
   if (mode !== 'world' && mode !== 'title') return; // 로비·게임 화면에서는 3D를 쉬어 배터리를 아낌
 
   if (mode === 'world') {
+    { const h = camHold; if (keys.has('q') || h === 'L') camYaw -= 1.7 * dt; if (keys.has('e') || h === 'R') camYaw += 1.7 * dt; if (keys.has('r') || h === 'U') camPitch += 1.1 * dt; if (keys.has('f') || h === 'D') camPitch -= 1.1 * dt;
+      if (keys.has('=') || keys.has('+') || h === 'I') camZoomK *= Math.exp(-0.9 * dt); if (keys.has('-') || h === 'O') camZoomK *= Math.exp(0.9 * dt); camPitch = Math.max(-0.45, Math.min(1.5, camPitch)); camZoomK = Math.max(0.3, Math.min(2.2, camZoomK)); }
     let ix = 0, iz = 0;
     if (keys.has('arrowleft') || keys.has('a')) ix -= 1; if (keys.has('arrowright') || keys.has('d')) ix += 1;
     if (keys.has('arrowup') || keys.has('w')) iz -= 1; if (keys.has('arrowdown') || keys.has('s')) iz += 1;
     if (joy.x || joy.y) { ix += joy.x; iz += joy.y; }
+    if (camYaw) { const c = Math.cos(camYaw), sn = Math.sin(camYaw), nx_ = ix * c + iz * sn; iz = -ix * sn + iz * c; ix = nx_; }
     let l = Math.hypot(ix, iz); if (l > 1) { ix /= l; iz /= l; l = 1; }
     if (l > 0.05) cancelAuto();
     if (seat && l > 0.5 && !route) standUp();
@@ -704,9 +745,9 @@ function frameLoop() {
     const sp = Math.hypot(vel.x, vel.z);
     if (sp > 0.3) { const a = Math.atan2(vel.x, vel.z); let da = a - facing; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; facing += da * (1 - Math.exp(-14 * dt)); }
     player.rotation.y = facing;
-    { const ty = seat ? seat.y : groundY(p.x, p.z); p.y += (ty - p.y) * (1 - Math.exp(-(seat ? 8 : 12) * dt)); }
+    { const ty = seat ? seatY(seat) : groundY(p.x, p.z); p.y += (ty - p.y) * (1 - Math.exp(-(seat ? 8 : 12) * dt)); }
     sitK += (((seat && seat.kind === 'sit') || riding ? 1 : 0) - sitK) * (1 - Math.exp(-9 * dt));
-    camMix += ((seat && seat.camOff ? 1 : 0) - camMix) * (1 - Math.exp(-3.5 * dt));
+    camMix += ((seat && seat.camFront ? 1 : 0) - camMix) * (1 - Math.exp(-3.5 * dt));
     { const hide = camView > 0.25; for (const l of labelSprites) l.visible = !hide; }
     camView += ((seat && seat.kind === 'view' ? 1 : 0) - camView) * (1 - Math.exp(-3.5 * dt));
     camZoom += ((seat && seat.kind === 'sit' ? 0.72 : riding ? 0.9 : 1) - camZoom) * (1 - Math.exp(-3 * dt));
@@ -752,21 +793,23 @@ function frameLoop() {
   npc.rotation.y = Math.sin(t * 0.5) * 0.4;
 
   // 카메라: 고정 각도로 따라감
-  const portrait = camera.aspect < 0.85; const dist = (portrait ? 1.7 : 1.0) * camZoom;
+  const portrait = camera.aspect < 0.85; const dist = (portrait ? 1.7 : 1.0) * camZoom * camZoomK;
   if (camDbg) { camera.position.set(...camDbg.pos); camera.up.set(0, 1, 0); camera.lookAt(...camDbg.look); scene.fog = null; }
   else if (topDown) { camera.position.set(0, 120, 8); camera.up.set(0, 0, -1); camera.lookAt(0, 0, 4); scene.fog = null; }
   else if (mode === 'title') {
     const a = t * 0.05 + 0.6, R = portrait ? 105 : 78;
     camPos.set(Math.sin(a) * R, portrait ? 52 : 40, Math.cos(a) * R * 0.8 - 6); camInit = true; camera.position.copy(camPos); camera.lookAt(0, 0, -4);
   } else {
-    tmp.set(player.position.x, 0, player.position.z).add(new THREE.Vector3(0, 17 * dist, 15.5 * dist));
-    if (camMix > 0.001 && seat && seat.camOff) tmp.lerp(tmp2.set(player.position.x + (seat.camOff[2] || 0), player.position.y + seat.camOff[0], player.position.z + seat.camOff[1]), camMix);
+    const pit = camPitch, sat = Math.min(1, Math.max(0, pit / 0.83)), rr = 23 * dist * (0.35 + 0.65 * sat), cp = Math.cos(pit), sp = Math.sin(pit);
+    tmp.set(player.position.x + Math.sin(camYaw) * cp * rr, Math.max(player.position.y + 1.0, player.position.y + sp * rr), player.position.z + Math.cos(camYaw) * cp * rr);
+    if (camMix > 0.001 && seat && seat.camFront) { const f = seat.face; tmp.lerp(tmp2.set(player.position.x + Math.sin(f) * seat.camFront[1], player.position.y + seat.camFront[0], player.position.z + Math.cos(f) * seat.camFront[1]), camMix); }
     if (camView > 0.001) { const f = player.rotation.y; tmp.lerp(tmp2.set(player.position.x - Math.sin(f) * 6.5, player.position.y + 6.2, player.position.z - Math.cos(f) * 6.5), camView); }
     if (!camInit) { camPos.copy(tmp); camInit = true; }
-    camPos.lerp(tmp, 1 - Math.exp(-(calm ? 20 : 5) * dt)); camera.position.copy(camPos);
-    const lx = player.position.x * 0.98, lz = player.position.z * 0.98 - 2.2;
-    if (camView > 0.001) { const f = player.rotation.y; camera.lookAt(THREE.MathUtils.lerp(lx, player.position.x + Math.sin(f) * 10, camView), THREE.MathUtils.lerp(1.2, 0.2, camView), THREE.MathUtils.lerp(lz, player.position.z + Math.cos(f) * 10, camView)); }
-    else camera.lookAt(lx, 1.2, lz);
+    camPos.lerp(tmp, 1 - Math.exp(-(calm ? 20 : 6) * dt)); camera.position.copy(camPos);
+    const bk = 1 - camMix, lx = player.position.x - Math.sin(camYaw) * 2.2 * bk, lz = player.position.z - Math.cos(camYaw) * 2.2 * bk;
+    const ly = THREE.MathUtils.lerp(1.2 + Math.max(0, -pit) * rr * 2.6, player.position.y + 1.0, camMix);
+    if (camView > 0.001) { const f = player.rotation.y; camera.lookAt(THREE.MathUtils.lerp(lx, player.position.x + Math.sin(f) * 10, camView), THREE.MathUtils.lerp(ly, 0.2, camView), THREE.MathUtils.lerp(lz, player.position.z + Math.cos(f) * 10, camView)); }
+    else camera.lookAt(lx, ly, lz);
   }
   sun.position.set(player.position.x - 22, 38, player.position.z + 16); sun.target.position.copy(player.position); sun.target.updateMatrixWorld();
   updateTip();
@@ -783,4 +826,4 @@ function debugShow() { // 충돌 범위와 입장 원을 위에서 본 모습으
   circles.forEach((c) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(c.r, c.r, 2, 16), m); o.position.set(c.x, 1, c.z); scene.add(o); });
   const m2 = new THREE.MeshBasicMaterial({ color: 0x00ccff }); spots.forEach((sp) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 8), m2); o.position.set(sp.x, 3, sp.z); scene.add(o); });
 }
-window.__ssw = { crowd, spots, ball, FIELD, POOL, get seat() { return seat; }, get riding() { return riding; }, sitDown, standUp, kickBall, blockedAt, player, get mode() { return mode; }, enterGym, openGame, enterZone, zones, SPORTS, scene, camera, boxes, circles, debugShow, topDown: (v = true) => { topDown = v; }, setCam: (pos, look) => { camDbg = pos ? { pos, look } : null; }, findPath, loadedOk, loadedFail, medals, flags, startGuide, get route() { return route; }, setAvatar };
+window.__ssw = { heightAt, get cam() { return { camYaw, camPitch, camZoomK }; }, setView: (y, p, z) => { camYaw = y; camPitch = p; camZoomK = z || 1; }, crowd, spots, ball, FIELD, POOL, get seat() { return seat; }, get riding() { return riding; }, sitDown, standUp, kickBall, blockedAt, player, get mode() { return mode; }, enterGym, openGame, enterZone, zones, SPORTS, scene, camera, boxes, circles, debugShow, topDown: (v = true) => { topDown = v; }, setCam: (pos, look) => { camDbg = pos ? { pos, look } : null; }, findPath, loadedOk, loadedFail, medals, flags, startGuide, get route() { return route; }, setAvatar };

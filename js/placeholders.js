@@ -145,4 +145,37 @@ export function buildGuide(texture) {
   return s;
 }
 
+// 글자를 둥근 판에 그려 허공에 띄우는 이름표 (카메라를 항상 바라봄)
+export function labelSprite(text, fg = '#27407a') {
+  const c = document.createElement('canvas'); const g = c.getContext('2d');
+  const font = '800 56px "Pretendard","Noto Sans KR","Malgun Gothic",sans-serif'; g.font = font;
+  const w = Math.ceil(g.measureText(text).width) + 72; c.width = w; c.height = 100;
+  g.font = font; g.fillStyle = '#ffffffee'; g.strokeStyle = '#9fb7e8'; g.lineWidth = 8;
+  const r = 40; g.beginPath(); g.moveTo(r, 4); g.arcTo(w - 4, 4, w - 4, 96, r); g.arcTo(w - 4, 96, 4, 96, r); g.arcTo(4, 96, 4, 4, r); g.arcTo(4, 4, w - 4, 4, r); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, 54);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+  sp.scale.set(w / 100 * 0.95, 0.95, 1); sp.renderOrder = 10; return sp;
+}
+
+export function buildPine() {
+  const g = new THREE.Group(); const t = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.4, 6), mat(0x7a5638)); t.position.y = 0.7; t.castShadow = true; g.add(t);
+  [[0, 1.5, 1.5], [0, 2.7, 1.15], [0, 3.8, 0.8]].forEach(([x, y, r], i) => { const c = new THREE.Mesh(new THREE.ConeGeometry(r, 1.7, 7), mat([0x3f9a5b, 0x4aa866, 0x58b574][i])); c.position.y = y + 0.4; c.castShadow = true; g.add(c); });
+  return g;
+}
+export function buildRock() {
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9, 0), mat(0x9aa0aa)); m.scale.set(1.2, 0.8, 1); m.position.y = 0.55; m.castShadow = true; const g = new THREE.Group(); g.add(m); return g;
+}
+export function buildBush() {
+  const g = new THREE.Group(); [[0, 0.6, 0, 0.7], [0.55, 0.45, 0.2, 0.5], [-0.5, 0.45, -0.1, 0.5]].forEach(([x, y, z, r]) => { const b = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), mat(0x5fb860)); b.position.set(x, y, z); b.castShadow = true; g.add(b); }); return g;
+}
+export function buildFlower() {
+  const g = new THREE.Group(); const cols = [0xff7aa8, 0xffd23f, 0xffffff, 0xb18cff, 0xff9a4a];
+  for (let i = 0; i < 3; i++) { const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), mat(cols[(i * 2 + 1) % 5])); f.position.set((i - 1) * 0.35, 0.35 + (i % 2) * 0.1, (i % 2) * 0.2); g.add(f); const st = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.35, 4), mat(0x4a9a4a)); st.position.set((i - 1) * 0.35, 0.17, (i % 2) * 0.2); g.add(st); }
+  return g;
+}
+export function buildLog() {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3, 8), mat(0x8b6240)); m.rotation.z = Math.PI / 2; m.position.y = 0.4; m.castShadow = true; const g = new THREE.Group(); g.add(m); return g;
+}
+
 export { mat, box };

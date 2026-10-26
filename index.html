@@ -14,7 +14,7 @@
 <header id="hud">
   <div id="guide"><img src="assets/ui/mascot.png" alt="" draggable="false"><p id="guide-text" aria-live="polite"></p></div>
   <div id="hud-right">
-    <canvas id="minimap" width="300" height="270" aria-label="미니맵"></canvas>
+    <canvas id="minimap" width="300" height="200" aria-label="미니맵"></canvas>
     <button id="gear" type="button" aria-label="설정">⚙</button>
   </div>
 </header>
@@ -39,6 +39,11 @@
     <img src="assets/ui/mascot.png" alt="" draggable="false">
     <h1 id="title-h"></h1>
     <p id="title-sub"></p>
+    <div class="avatars" role="group" aria-label="캐릭터 고르기">
+      <button type="button" class="avatar" data-k="boy"><span>🧒</span>소년</button>
+      <button type="button" class="avatar" data-k="wheelchair"><span>♿</span>휠체어 선수</button>
+    </div>
+    <button type="button" id="open-info" class="ghost">학교 소개 보기</button>
     <label class="chk"><input type="checkbox" id="t-easy"> 쉬운 모드</label>
     <button id="start" type="button">시작하기</button>
     <small>컴퓨터는 방향키와 스페이스, 태블릿·휴대폰은 화면 버튼으로 해요.</small>
@@ -49,11 +54,20 @@
 <section id="lobby" hidden>
   <div class="lobby-top">
     <button id="lobby-back" type="button">← 광장으로</button>
-    <h2>체육관</h2>
+    <h2>체육관 로비</h2>
     <div class="medals"><span id="medal-row"></span><b id="medal-count"></b></div>
   </div>
   <div id="sports" role="list"></div>
   <p class="lobby-hint">하고 싶은 종목을 눌러요. 틀려도 괜찮아요. 모두 응원해요!</p>
+</section>
+
+<!-- 안내관: 학교 소개 · 육성 종목 · 입학 안내 -->
+<section id="info" hidden>
+  <div class="info-card">
+    <div class="info-top"><h2 id="info-title"></h2><button id="info-close" type="button">닫기 ✕</button></div>
+    <div class="tabs" role="tablist"><button type="button" data-t="about" class="on">학교 소개</button><button type="button" data-t="sports">육성 종목</button><button type="button" data-t="admission">입학 안내</button></div>
+    <div id="info-body"></div>
+  </div>
 </section>
 
 <!-- 기존 스포츠 게임 -->
@@ -62,6 +76,7 @@
   <iframe id="game-frame" title="스포츠 체험 게임" allow="autoplay" src="about:blank"></iframe>
 </section>
 
+<div id="medal-pop" role="status"><img src="assets/ui/medal_gold.webp" alt=""><p></p></div>
 <div id="toast" role="status"></div>
 <div id="fade"></div>
 <script type="module" src="js/main.js"></script>

@@ -14,7 +14,7 @@ const segDist = (px, py, ax, ay, bx, by) => {
 function humanoid(p) {
   const { hip, knee, sx, sy, hx, hy, neck, legX } = p;
   return {
-    type: 'human', stride: p.stride || 1.15,
+    type: 'human', stride: p.stride || 1.15, kneeY: knee,
     bones: [['hips', null, 0, hip, 0], ['spine', 'hips', 0, hip + 0.07, 0], ['head', 'spine', 0, neck - 0.02, 0],
       ['armL', 'spine', sx, sy, 0], ['armR', 'spine', -sx, sy, 0],
       ['legL', 'hips', legX, hip, 0], ['legR', 'hips', -legX, hip, 0],
@@ -118,12 +118,15 @@ export function autoRig(group, kind) {
   for (const [, sm] of rigged) { sm.updateMatrixWorld(true); sm.bind(skeleton, sm.matrixWorld.clone()); }
 
   // ---- 동작 ----
-  let phase = Math.random() * 6, amt = 0, wheel = 0, clock = Math.random() * 10;
+  let phase = Math.random() * 6, amt = 0, wheel = 0, clock = Math.random() * 10, sit = 0;
+  const dropY = spec.type === 'human' ? (spec.bones[0][3] - spec.kneeY) * H : 0;
   const stride = spec.stride;
   const rx = (b, a) => { if (b) b.rotation.x = a; };
   return {
     kind, bones,
     // dt: 시간(초), speed: 이동 속도(m/s), size: 모델 키(m) — 바퀴 굴림 계산용
+    // 앉기: 0(서 있음) ~ 1(의자에 앉음). 다리를 앞으로, 무릎을 굽히고 엉덩이를 내려요.
+    setSit(k) { sit = k; },
     update(dt, speed, size = 2.2) {
       clock += dt; const target = Math.min(1, speed / 5); amt += (target - amt) * (1 - Math.exp(-10 * dt));
       phase += dt * speed * stride * 1.25;
@@ -140,6 +143,11 @@ export function autoRig(group, kind) {
         }
         bones.spine.rotation.y = Math.sin(phase) * 0.12 * amt; bones.hips.rotation.y = -Math.sin(phase) * 0.06 * amt;
         bones.spine.rotation.x = 0.05 * amt;
+        if (sit > 0.001) {
+          for (const S of ['L', 'R']) { bones['leg' + S].rotation.x = bones['leg' + S].rotation.x * (1 - sit) - 1.5 * sit; bones['knee' + S].rotation.x = bones['knee' + S].rotation.x * (1 - sit) + 1.45 * sit; bones['arm' + S].rotation.x = bones['arm' + S].rotation.x * (1 - sit) - 0.55 * sit; }
+          bones.spine.rotation.x *= (1 - sit);
+        }
+        bones.hips.position.y = bones.hips.userData.rest.y - dropY * sit;
       } else {
         wheel += speed * dt / (0.26 * size);   // 바퀴 반지름 약 0.26 × 키
         for (const S of ['L', 'R']) {

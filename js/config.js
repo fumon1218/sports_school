@@ -37,11 +37,11 @@ export const GUIDE_POS = { x: 4.5, z: 16 };
 export const BUILDINGS = [
   { id: 'gym', label: '체육관', model: 'gym.glb', size: 18, dim: [1, 0.47, 0.92], x: -30, z: -21, rotY: 0, zone: { kind: 'lobby', x: -30, z: -10.4 } },
   { id: 'teacher', label: '교사동', model: 'teacher.glb', size: 26, dim: [1, 0.42, 0.51], x: 0, z: -23, rotY: 0, soon: true },
-  { id: 'pool', label: '수영장동', model: 'pool.glb', size: 20, dim: [1, 0.28, 0.99], x: 30, z: -18, rotY: 0, zone: { kind: 'game', sport: 'swimming', label: '수영', x: 16.3, z: -20 } },
+  { id: 'pool', label: '수영장동', model: 'pool.glb', size: 20, dim: [1, 0.28, 0.99], x: 30, z: -18, rotY: 0, open: true, zone: { kind: 'game', sport: 'swimming', label: '수영', x: 16.3, z: -20 } },
   { id: 'dorm', label: '생활관', model: 'dorm.glb', size: 22, dim: [1, 0.32, 0.59], x: 32, z: 1, rotY: 0, soon: true },
   { id: 'hall', label: '안내관', model: 'hall.glb', size: 13, dim: [0.76, 0.44, 1], x: 16.5, z: -3.5, rotY: 0, zone: { kind: 'info', x: 9.8, z: -4.6 } },
   { id: 'expo', label: '전시관', model: 'expo.glb', size: 12, dim: [1, 0.28, 0.7], x: -15, z: -10.5, rotY: 0, soon: true },
-  { id: 'stadium', label: '운동장', model: 'stadium.glb', size: 30, dim: [1, 0.16, 0.66], x: -28, z: 8, rotY: 0, soon: false },
+  { id: 'stadium', label: '운동장', model: 'stadium.glb', size: 30, dim: [1, 0.16, 0.66], x: -28, z: 8, rotY: 0, soon: false, ring: { a: 14.4, b: 9.4, gap: 0.5 } },
 ];
 
 // 체험 구역: 들어가면 해당 종목 게임이 바로 열립니다. (open:false 종목은 '곧 열려요')
@@ -57,33 +57,35 @@ export const STATIONS = [
 // 장식 소품 (충돌 있음)
 export const DECOR = [
   { id: 'trophy', model: 'trophy.glb', size: 3.4, dim: [1, 0.96, 0.59], x: 0, z: 0, rotY: 0, r: 1.2, y: 0 },
-  { id: 'patio', model: 'patio.glb', size: 8, dim: [0.99, 0.45, 0.57], x: -3.5, z: -13, rotY: 0 },
+  { id: 'patio', model: 'patio.glb', size: 13.5, dim: [0.99, 0.45, 0.57], x: -1.5, z: -13.5, rotY: 0, walk: true },
   { id: 'holo1', model: 'holosign.glb', size: 3.6, dim: [0.9, 1, 0.45], x: -9, z: 3, rotY: 0, r: 0.8 },
   { id: 'holo2', model: 'holosign.glb', size: 3.6, dim: [0.9, 1, 0.45], x: 9.5, z: 7.5, rotY: 0, r: 0.8 },
-  { id: 'racer', model: 'racer.glb', size: 3.2, dim: [1, 0.46, 0.49], x: -9.5, z: 16, rotY: 0, r: 1.2 },
+  { id: 'racer', model: 'racer.glb', size: 3.4, dim: [1, 0.46, 0.49], x: -9.5, z: 16, rotY: 90, r: 1.2 },
 ];
 
 // 벚나무 (모델 복제)
 export const CHERRY = [[-9, -5], [8, -10], [-10.5, 8], [10, 5], [-34, -8], [36, -10], [42, -5], [-5, -27], [8, -27]];
 // 일반 나무 (임시 도형)
-export const GREEN = [[-42, 22], [-36, 24], [-28, 22], [-20, 24], [-42, 12], [28, 24], [20, 23], [-42, -24], [-42, -2], [42, 10], [42, -26], [14, -27], [-14, -26], [24, 18], [-24, 19], [-17, -14], [20, 8]];
+export const GREEN = [[-42, 22], [-36, 24], [-28, 22], [-20, 24], [-42, 12], [28, 24], [20, 23], [-42, -24], [-42, -2], [46, -26], [14, -27], [-14, -26], [24, 18], [-24, 19], [-17, -14], [20, 8]];
 
 // 정문
 export const GATE = { model: 'gate.glb', size: 20, dim: [1, 0.31, 0.55], x: 0, z: 23, rotY: 0, open: 3.2 };
 
 // 학교 울타리 안쪽 범위 (바깥은 열린 자연 지대)
-export const CAMPUS = { minX: -44.5, maxX: 44.5, minZ: -29.5, maxZ: 30.5 };
+export const CAMPUS = { minX: -44.5, maxX: 50, minZ: -29.5, maxZ: 30.5 };
 
 // 자연 환경 (오픈 월드). file 이 assets/models/nature/ 에 있으면 그 모델을, 없으면 임시 도형을 흩뿌립니다.
 // 로블록스 등에서 만든 식물·바위·구조물 glb 를 같은 이름으로 넣으면 자동으로 바뀝니다.
 // size: [최소, 최대] 크기, r: 충돌 반지름(0 이면 통과), zone: forest(숲 가장자리) · meadow(들판) · any
 export const NATURE = [
-  { id: 'tree_a', file: 'tree_a.glb', fallback: 'tree', count: 46, size: [6, 9], r: 0.9, zone: 'forest' },
-  { id: 'tree_b', file: 'tree_b.glb', fallback: 'tree2', count: 34, size: [6, 9], r: 0.9, zone: 'forest' },
-  { id: 'pine', file: 'pine.glb', fallback: 'pine', count: 40, size: [7, 11], r: 0.9, zone: 'forest' },
+  { id: 'tree_a', file: 'tree_a.glb', fallback: 'tree', count: 22, size: [6.5, 9], r: 0.9, zone: 'forest' },
+  { id: 'tree_b', file: 'tree_b.glb', fallback: 'tree2', count: 20, size: [6.5, 9.5], r: 0.8, zone: 'forest' },
+  { id: 'maple', file: 'maple.glb', fallback: 'tree', count: 12, size: [6, 8.5], r: 0.9, zone: 'forest' },
+  { id: 'pine', file: 'pine.glb', fallback: 'pine', count: 32, size: [8, 12], r: 0.8, zone: 'forest' },
+  { id: 'palm', file: 'palm.glb', fallback: 'pine', count: 5, size: [6, 8], r: 0.6, zone: 'meadow' },
   { id: 'bush', file: 'bush.glb', fallback: 'bush', count: 46, size: [1.4, 2.4], r: 0.6, zone: 'any' },
-  { id: 'rock_a', file: 'rock_a.glb', fallback: 'rock', count: 22, size: [1.6, 3.4], r: 1.0, zone: 'any' },
-  { id: 'rock_b', file: 'rock_b.glb', fallback: 'rock', count: 16, size: [1.2, 2.4], r: 0.7, zone: 'any' },
+  { id: 'rock_a', file: 'rock_a.glb', fallback: 'rock', count: 14, size: [2.2, 4.2], r: 1.1, zone: 'any' },
+  { id: 'rock_b', file: 'rock_b.glb', fallback: 'rock', count: 14, size: [1.8, 3.2], r: 0.9, zone: 'any' },
   { id: 'flower', file: 'flower.glb', fallback: 'flower', count: 70, size: [0.7, 1.1], r: 0, zone: 'meadow' },
   { id: 'log', file: 'log.glb', fallback: 'log', count: 8, size: [2.6, 3.6], r: 0.8, zone: 'forest' },
 ];
@@ -110,7 +112,7 @@ export const INFO = {
   admission: {
     note: '입학 전형 안내는 확정되는 대로 이곳에 알려 드려요.',
     items: [   // text 가 비어 있으면 '준비 중이에요'로 보입니다
-      { h: '모집 대상', p: '' },
+      { h: '모집 대상', p: '중학교 1학년부터 입학할 수 있어요.' },
       { h: '지원 시기', p: '' },
       { h: '전형 방법', p: '' },
       { h: '준비할 것', p: '' },

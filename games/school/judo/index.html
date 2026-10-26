@@ -28,17 +28,17 @@ function draw(c, W, H) {
   const ux = W * 0.34, tx = W * 0.66; // 나(uke, 흰 도복) / 파트너(tori, 파란 도복)
   const bow = state === 'bowdo' ? Math.sin(Math.min(1, t / 1.1) * Math.PI) * 0.4 : state === 'bow' ? 0 : 0;
   const grip = (state === 'grip' || state === 'ring' || state === 'fall') ? 1 : 0;
-  // 파트너
-  const ta = state === 'fall' ? Math.min(1, t / 0.55) : 0;
-  K.person(tx, gy + 26, s, { gi: '#3a6fe0', pants: '#3a6fe0', belt: '#222', face: -1, lean: bow + ta * 0.12, aU: [grip ? 1.1 : 0.2, grip ? 0.9 : 0.2], aF: [grip ? 1.5 : 0.1, grip ? 1.3 : 0.1], hair: '#222', lU: [0.2, -0.2], lF: [0.2, -0.1] });
-  // 나
-  let rot = 0, px = ux, py = gy + 26, o = { gi: '#fff', pants: '#fff', belt: '#222', lean: bow, aU: [grip ? 0.9 : 0.2, grip ? 0.7 : 0.2], aF: [grip ? 1.3 : 0.1, grip ? 1.1 : 0.1], lU: [0.15, -0.2], lF: [0.15, -0.1], hair: '#3a2a22' };
-  const lieY = gy + 26 - s * 0.35;
-  if (state === 'fall') { const k = ease(Math.min(1, t / 0.55)); rot = -k * Math.PI / 2; px = ux - k * s * 0.5; py = K.lerp(gy + 26 - s * 0.95, lieY, k) + s * 0.95 * (1 - k) * 0; }
-  if (state === 'lie') { rot = -Math.PI / 2; px = ux - s * 0.5; py = lieY; }
-  if (state === 'rise') { const k = ease(Math.min(1, t / 1.0)); rot = -(1 - k) * Math.PI / 2; px = ux - (1 - k) * s * 0.5; py = K.lerp(lieY, gy + 26, k); }
-  if ((state === 'fall' || state === 'lie') && slap) o = Object.assign(o, { aU: [1.55, -1.55], aF: [1.55, -1.55] });
-  if (rot !== 0) { c.save(); c.translate(px, py); K.person(0, 0, s, Object.assign(o, { rot })); c.restore(); } else K.person(px, py, s, o);
+  // 파트너(파란 셔츠 친구)
+  const ta = state === 'fall' ? Math.min(1, t / 0.55) : 0, hs = s * 2.3;
+  K.spr('sq', tx, gy + 26, hs * 0.92, { face: -1, rot: -(bow + ta * 0.1), px: 0.5 });
+  // 나(달리기 소년): 경례 → 잡기 → 낙법 → 일어나기
+  const lieY = gy + 26 - s * 0.05;
+  let rot = bow, px = ux, py = gy + 26, nm = grip ? 'run_ready' : 'run_idle';
+  if (grip) nm = 'run_idle';
+  if (state === 'fall') { const k = ease(Math.min(1, t / 0.55)); rot = -k * Math.PI / 2; px = ux + k * hs * 0.38; nm = 'run_idle'; }
+  if (state === 'lie') { rot = -Math.PI / 2; px = ux + hs * 0.38; nm = 'run_idle'; }
+  if (state === 'rise') { const k = ease(Math.min(1, t / 1.0)); rot = -(1 - k) * Math.PI / 2; px = ux + (1 - k) * hs * 0.38; nm = k > 0.8 ? 'win' : 'run_idle'; }
+  K.spr(nm, px, py, hs, { rot, px: 0.5, shadow: state !== 'lie' });
   // 매트 울림
   if (ripple > 0) { c.strokeStyle = `rgba(255,255,255,${ripple})`; c.lineWidth = 6; c.beginPath(); c.ellipse(ux - s * 0.5, gy + 30, s * (1.6 - ripple), s * 0.25 * (1.6 - ripple), 0, 0, 7); c.stroke(); K.text('탁!', ux - s * 0.5, gy - s * 0.4 - (1 - ripple) * 30, 44, `rgba(216,75,42,${ripple})`); }
   if (state === 'ring') K.ring(ux + s * 0.1, gy - s * 1.6, 34, (RING - t) / RING * 0.9, RING - t < WIN ? '#25b455' : '#ff7a2f');

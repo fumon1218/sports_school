@@ -56,6 +56,31 @@ const Kit = (() => {
     ctx.strokeStyle = '#c0665a'; ctx.lineWidth = s * 0.03; ctx.beginPath(); ctx.arc(lean + s * 0.16, shY - s * 0.14, s * 0.06, 0.2, 2.6); ctx.stroke();
     ctx.restore();
   };
+
+  // 옥쌤의 즐거운 교실 캐릭터(스프라이트)를 가져와 써요: 발 중앙이 기준점
+  const BASE = new URL('../oks/sports/assets/', document.currentScript ? document.currentScript.src : location.href).href;
+  const FILES = { run_idle: 'athletics/runner_idle', run_ready: 'athletics/runner_ready', run_a: 'athletics/runner_run_a', run_b: 'athletics/runner_run_b', hurdle: 'athletics/runner_hurdle', win: 'athletics/runner_celebrate',
+    tt_boy: 'tabletennis/boy_ready', tt_boy_hit: 'tabletennis/boy_hit', tt_girl: 'tabletennis/girl_ready', tt_girl_hit: 'tabletennis/girl_hit', tt_girl_cheer: 'tabletennis/girl_cheer',
+    tn_boy: 'tennis/boy_ready', tn_boy_hit: 'tennis/boy_hit', tn_boy_serve: 'tennis/boy_serve', tn_boy_cheer: 'tennis/boy_cheer', tn_girl: 'tennis/girl_ready', tn_girl_hit: 'tennis/girl_hit' };
+  const SP = {};
+  const trim = (img) => { const w = img.naturalWidth, h = img.naturalHeight, cn = document.createElement('canvas'); cn.width = w; cn.height = h; const g = cn.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, w, h).data;
+    // 가장자리에 남은 부스러기를 빼려고, 4칸씩 묶어서 가장 큰 덩어리만 남겨요
+    const B = 4, gw = Math.ceil(w / B), gh = Math.ceil(h / B), on = new Uint8Array(gw * gh); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 40) on[((y / B) | 0) * gw + ((x / B) | 0)] = 1;
+    const lab = new Int32Array(gw * gh), sizes = []; let n = 0;
+    for (let i = 0; i < gw * gh; i++) if (on[i] && !lab[i]) { n++; let c = 0; const st = [i]; lab[i] = n; while (st.length) { const j = st.pop(); c++; const jx = j % gw, jy = (j / gw) | 0; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const nx = jx + dx, ny = jy + dy; if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue; const k = ny * gw + nx; if (on[k] && !lab[k]) { lab[k] = n; st.push(k); } } } sizes[n] = c; }
+    let best = 1; for (let i = 1; i <= n; i++) if (sizes[i] > sizes[best]) best = i;
+    let x0 = gw, x1 = 0, y0 = gh, y1 = 0; for (let i = 0; i < gw * gh; i++) if (lab[i] === best) { const x = i % gw, y = (i / gw) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    x0 *= B; y0 *= B; x1 = Math.min(w, (x1 + 1) * B); y1 = Math.min(h, (y1 + 1) * B);
+    return { img, sx: x0, sy: y0, sw: x1 - x0, sh: y1 - y0 }; };
+  const load = (k, url) => { const im = new Image(); im.onload = () => { try { SP[k] = trim(im); } catch (e) { SP[k] = { img: im, sx: 0, sy: 0, sw: im.naturalWidth, sh: im.naturalHeight }; } }; im.src = url; };
+  for (const k in FILES) load(k, BASE + FILES[k] + '.webp');
+  load('sq', new URL('../../assets/ui/av_squirrel.webp', document.currentScript ? document.currentScript.src : location.href).href); // 학교 다람쥐 마스코트
+  // K.spr(이름, 발 x, 발 y, 키(px), {face:-1이면 왼쪽 보기, rot, alpha, shadow, px:기준점 가로비율}) → 그려진 가로 너비
+  K.spr = (name, x, y, h, o = {}) => { const a = SP[name]; if (!a) return 0; const keep = o.crop || 1, sh = a.sh * keep, w = h * a.sw / sh;
+    if (o.shadow !== false) { ctx.fillStyle = '#0002'; ctx.beginPath(); ctx.ellipse(x, y + 2, w * 0.42, h * 0.045, 0, 0, 7); ctx.fill(); }
+    ctx.save(); ctx.translate(x, y - (o.lift || 0)); if (o.rot) ctx.rotate(o.rot); ctx.scale(o.face || 1, 1); if (o.alpha != null) ctx.globalAlpha = o.alpha; if (o.filter) ctx.filter = o.filter;
+    ctx.drawImage(a.img, a.sx, a.sy, a.sw, sh, -w * (o.px == null ? 0.5 : o.px), -h, w, h); ctx.restore(); return w; };
+  K.sprW = (name, h) => { const a = SP[name]; return a ? h * a.sw / a.sh : h * 0.6; };
   K.particles = []; K.burst = (x, y, color = '#ffd24a', n = 14) => { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 80 + Math.random() * 200; K.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 80, life: 0.7 + Math.random() * 0.4, c: color }); } };
   K.drawParticles = (dt) => { for (const p of K.particles) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 420 * dt; K.circle(p.x, p.y, 5, p.c); } K.particles = K.particles.filter((p) => p.life > 0); };
   return K;

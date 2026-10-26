@@ -30,7 +30,7 @@ function draw(c, W, H) {
   for (let x = 0; x < W; x += 140) { c.strokeStyle = '#ffffff55'; c.lineWidth = 3; c.beginPath(); c.moveTo(x, gy + 10); c.lineTo(x - 40, H); c.stroke(); }
   // 사범님 + 미트
   const px = W * 0.34, ox = W * 0.74, ph = padH || 1.15;
-  K.person(ox, gy + 20, s, { gi: '#fff', pants: '#fff', belt: '#222', face: -1, aU: [-1.2, -1.2], aF: [-1.5, -1.5], hair: '#222', lU: [0.1, -0.1], lF: [0.1, -0.1] });
+  K.spr('sq', ox, gy + 20, s * 2.1, { face: -1 });
   const mx = px + s * 1.12, my = gy - ph * s * 0.95;
   const bh = s * 0.9, bw = 16;
   const plank = (x, y, w, h, tone) => { K.rr(x, y, w, h, 3, tone, '#8a5a2b'); c.strokeStyle = '#a9743a'; c.lineWidth = 1.5; for (let g = 1; g < 4; g++) { c.beginPath(); c.moveTo(x + w * g / 4, y + 3); c.lineTo(x + w * g / 4, y + h - 3); c.stroke(); } };
@@ -38,11 +38,12 @@ function draw(c, W, H) {
     if (brokeT <= 0) { c.save(); c.translate(mx, my); const sh = state === 'kick' ? Math.sin(K.t * 60) * 3 : 0; c.translate(sh, 0); for (let i = 0; i < boards; i++) plank(-bw / 2 + i * 10 - (boards - 1) * 5, -bh / 2, bw, bh, ['#e8c288', '#e0b676', '#d8aa68'][i]); K.rr(14, -8, 26, 16, 8, '#f2c29b'); c.restore(); }
     else for (const p of pieces) { c.save(); c.translate(p.x, p.y); c.rotate(p.r); plank(-bw / 2 - 4, -bh / 4, bw, bh / 2, '#e0b676'); c.restore(); }
   }
-  // 나 (흰 도복, 검은 띠)
-  const bow = state === 'bow' ? Math.sin(Math.min(1, (1.2 - bowT) / 0.6) * Math.PI) * 0.35 : 0;
-  let o = { gi: '#fff', pants: '#fff', belt: '#222', lean: bow, aU: [0.5, -0.3], aF: [0.9, -0.5], lU: [0.15, -0.35], lF: [0.15, -0.1], hair: '#3a2a22' };
-  if (kick > 0 || state === 'kick') { const k = Math.sin(Math.min(1, 1 - kick) * Math.PI); const a = K.lerp(0.2, 0.55 + ph * 0.9, k); o = Object.assign(o, { lU: [a, -0.3], lF: [a + 0.05, -0.1], lean: -0.1 * k, aU: [0.2, -0.5], aF: [0.6, -0.9] }); }
-  K.person(px, gy + 20, s, o);
+  // 나: 옥쌤 교실의 달리기 소년 (차렷 → 준비 → 발차기)
+  const bowK = state === 'bow' ? Math.sin(Math.min(1, (1.2 - bowT) / 0.6) * Math.PI) * 0.4 : 0;
+  let nm = 'run_idle', rot = bowK, dx = 0;
+  if (kick > 0 || state === 'kick') { const k = Math.sin(Math.min(1, 1 - kick) * Math.PI); nm = k > 0.15 ? 'hurdle' : 'run_idle'; rot = -(ph - 1.15) * 0.16 * k; dx = k * s * 0.45; }
+  if (state === 'kick' && kick <= 0 && hits > 0) nm = 'win';
+  const kk = nm === 'hurdle'; K.spr(nm, px + dx, gy + 20, kk ? s * 2.4 * 0.62 : s * 2.4, { rot, px: 0.45, crop: kk ? 0.6 : 1, lift: kk ? s * 0.55 : 0 });
   if (state === 'pad') K.ring(mx - 4, my, 36, (RING - padT) / RING * 0.9, RING - padT < WIN ? '#25b455' : '#ff7a2f');
   K.drawParticles(1 / 60);
 }

@@ -28,16 +28,15 @@ function draw(c, W, H) {
   const ly = wl + 46; for (let x = -60; x < W + 60; x += 46) { const xx = x + ((-dist * 140) % 46); K.circle(xx, ly + Math.sin(K.t * 3 + x) * 2, 11, ((x / 46) | 0) % 2 ? '#ff6b6b' : '#fff'); }
   // 도착 벽
   const toGoal = GOAL - dist; if (toGoal < 12) { const wx = W * 0.5 + toGoal * 130; K.rr(wx, wl - 20, 120, H, 0, '#f6f1e7'); K.rr(wx, wl + 20, 14, H, 0, '#2a79b8'); K.text('도착!', wx + 60, wl + 90, 34, '#d84b2a'); }
-  // 헤엄치는 아이
-  const sx = W * 0.38, sy = wl + 78 + Math.sin(wob) * 5, a = stroke;
-  c.save(); c.translate(sx, sy);
-  K.rr(-80, -14, 120, 30, 15, '#ff8a4c'); K.rr(-82, -6, 30, 16, 8, '#3a6fe0'); // 몸, 수영복 / 다리
-  K.circle(58, -8, 26, '#f2c29b'); c.fillStyle = '#ffd24a'; c.beginPath(); c.arc(58, -12, 27, Math.PI, 0); c.fill(); K.circle(68, -6, 3.5, '#222'); K.circle(75, 4, 7, '#ffb6a6');
-  c.lineCap = 'round'; c.strokeStyle = '#f2c29b'; c.lineWidth = 15; const arm = -1.6 + a * 3.4 + Math.sin(wob * 1.5) * 0.2; c.beginPath(); c.moveTo(30, -4); c.lineTo(30 + Math.cos(arm) * 62, -4 + Math.sin(arm) * 62); c.stroke();
-  c.restore();
+  // 헤엄치는 아이: 옥쌤 교실의 달리기 소년이 물에 엎드려 팔을 번갈아 저어요
+  const sx = W * 0.38, sy = wl + 70 + Math.sin(wob) * 5, a = stroke, ph = Math.sin(wob * 1.6) > 0 || a > 0.5 ? 'run_a' : 'run_b', sh = Math.min(H, W) * 0.42;
+  K.spr(ph, sx, sy + sh * 0.12, sh, { rot: 1.3 + Math.sin(wob) * 0.04, shadow: false, px: 0.5 });
+  // 몸 아래쪽은 물 속에 잠겨 보여요
+  const wg = c.createLinearGradient(0, sy - 8, 0, sy + sh * 0.5); wg.addColorStop(0, '#5fd0eecc'); wg.addColorStop(1, '#1f8fc9ee'); c.fillStyle = wg; c.fillRect(0, sy - 8, W, H);
+  c.strokeStyle = '#ffffffcc'; c.lineWidth = 4; c.beginPath(); for (let x = 0; x <= W; x += 12) c.lineTo(x, sy - 8 + Math.sin(x * 0.04 + K.t * 4) * 3); c.stroke();
   c.fillStyle = '#ffffffaa'; c.fillRect(0, wl - 3, W, 6); // 수면선
   // 물보라
-  for (const p of splash) { p.l -= 1 / 60; p.x += p.vx / 60; p.y += p.vy / 60; p.vy += 8; K.circle(sx + 60 + p.x, sy - 10 + p.y, 6, '#fff'); } splash = splash.filter((p) => p.l > 0);
+  for (const p of splash) { p.l -= 1 / 60; p.x += p.vx / 60; p.y += p.vy / 60; p.vy += 8; K.circle(sx + 70 + p.x, sy - 10 + p.y, 6, '#fff'); } splash = splash.filter((p) => p.l > 0);
   // 박자 신호
   const p = beatT / BEAT, rr = 36; K.ring(W * 0.38 + 60, wl - 70, rr, 1 - p, p > 1 - WIN / BEAT * 1.2 || p < WIN / BEAT * 0.6 ? '#25b455' : '#ff7a2f');
 }

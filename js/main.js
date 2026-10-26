@@ -1,6 +1,7 @@
 import * as THREE from '../vendor/three/three.module.js';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
-import { CONFIG, INFO, SPORTS, BUILDINGS, STATIONS, DECOR, CHERRY, GREEN, GATE, WORLD, CAMPUS, NATURE, LAKE, MAP, PLAYER_START, GUIDE_POS } from './config.js';
+import { CONFIG, INFO, SPORTS, BUILDINGS, STATIONS, DECOR, CHERRY, GREEN, GATE, WORLD, CAMPUS, NATURE, LAKE, MAP, PLAYER_START } from './config.js';
+import { autoRig } from './rig.js';
 import * as P from './placeholders.js';
 
 const $ = (s) => document.querySelector(s);
@@ -102,7 +103,7 @@ BUILDINGS.forEach((b) => {
   const f = footprint(b);
   addBox(b.x, b.z, f.w * 0.94, f.d * 0.94, { id: b.id, label: b.label, locked: !!b.soon });
   addLabel(b.label, b.x, f.h + 2.4, b.z + f.d * 0.12);
-  if (b.zone) zones.push({ id: b.id, kind: b.zone.kind, x: b.zone.x, z: b.zone.z, r: 2.4, label: b.label, open: true });
+  if (b.zone) zones.push({ id: b.id, kind: b.zone.kind, x: b.zone.x, z: b.zone.z, r: 2.4, label: b.label, open: true, tip: { x: b.zone.x, y: Math.max(f.h * 0.5, 5.5), z: b.zone.z } });
 });
 
 // 정문
@@ -123,7 +124,7 @@ STATIONS.forEach((st) => {
   addBox(st.x, st.z, f.w * 0.9, f.d * 0.9);
   const sp = sportById[st.sport]; const open = !!sp.open;
   const zx = st.x, zz = st.z + f.d / 2 + 2.3;
-  zones.push({ id: st.id, kind: 'game', sport: st.sport, x: zx, z: zz, r: 2.1, label: st.label, open });
+  zones.push({ id: st.id, kind: 'game', sport: st.sport, x: zx, z: zz, r: 2.1, label: st.label, open, tip: { x: zx, y: Math.max(f.h + 1.6, 4.2), z: zz } });
   addLabel(`${st.label}${open ? '' : ' (곧)'}`, st.x, f.h + 2.0, st.z, 0.95);
 });
 // 입장 원(바닥 표시)
@@ -197,16 +198,15 @@ const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelcha
 const player = new THREE.Group(); player.position.set(PLAYER_START.x, 0, PLAYER_START.z); scene.add(player);
 const playerBody = new THREE.Group(); player.add(playerBody);
 const npc = new THREE.Group(); npc.position.set(-3, 0, 16); scene.add(npc);
+let playerRig = null, npcRig = null;
 function setAvatar(key) {
   settings.avatar = key; store.set('avatar', key);
-  playerBody.clear(); npc.clear();
+  playerBody.clear(); npc.clear(); playerRig = null; npcRig = null;
   const other = key === 'boy' ? 'wheelchair' : 'boy';
   const fb = P.buildPlayer(); playerBody.add(fb);
-  loadModel(AVATARS[key].model).then((src) => { if (!src) return; playerBody.remove(fb); playerBody.add(fitModel(src, AVATARS[key].size)); });
-  loadModel(AVATARS[other].model).then((src) => { if (!src) return; npc.add(fitModel(src, AVATARS[other].size)); });
+  loadModel(AVATARS[key].model).then((src) => { if (!src) return; playerBody.remove(fb); const m = fitModel(src, AVATARS[key].size); playerBody.add(m); playerRig = autoRig(m, key); });
+  loadModel(AVATARS[other].model).then((src) => { if (!src) return; const m = fitModel(src, AVATARS[other].size); npc.add(m); npcRig = autoRig(m, other); });
 }
-let guide = null;
-new THREE.TextureLoader().load('assets/ui/mascot.png', (t) => { t.colorSpace = THREE.SRGBColorSpace; guide = P.buildGuide(t); guide.position.set(GUIDE_POS.x, 0, GUIDE_POS.z); scene.add(guide); });
 
 /* ---------- 길 찾기 (자동 안내용) ---------- */
 const CELL = 1, GX0 = WORLD.minX, GZ0 = WORLD.minZ, GW = Math.ceil((WORLD.maxX - WORLD.minX) / CELL) + 1, GH = Math.ceil((WORLD.maxZ - WORLD.minZ) / CELL) + 1;
@@ -457,6 +457,29 @@ addEventListener('resize', resize); resize();
 /* ---------- 루프 ---------- */
 const clock = new THREE.Clock(); const camPos = new THREE.Vector3(); let camInit = false; const tmp = new THREE.Vector3();
 let topDown = false;
+
+/* ---------- 종목 위에 떠 있는 '들어가기' 말풍선 ---------- */
+const tipEl = document.createElement('button'); tipEl.id = 'zone-tip'; tipEl.hidden = true; tipEl.type = 'button';
+tipEl.innerHTML = '<span class="ti"></span><b></b><i>▼</i>'; document.body.appendChild(tipEl);
+let tipZone = null; const tipV = new THREE.Vector3();
+tipEl.addEventListener('click', (e) => { e.stopPropagation(); if (tipZone) enterZone(tipZone); });
+tipEl.addEventListener('pointerdown', (e) => e.stopPropagation());
+function updateTip() {
+  let best = null, bd = 1e9;
+  if (mode === 'world' && !route) for (const z of zones) { const d = Math.hypot(player.position.x - z.x, player.position.z - z.z); if (d < z.r + 9 && d < bd) { bd = d; best = z; } }
+  if (!best) { if (!tipEl.hidden) { tipEl.hidden = true; tipZone = null; } return; }
+  tipV.set(best.tip.x, best.tip.y, best.tip.z).project(camera);
+  if (tipV.z > 1) { tipEl.hidden = true; return; }
+  if (tipZone !== best) {
+    tipZone = best; tipEl.className = best.open ? 'open' : 'soon';
+    tipEl.querySelector('.ti').textContent = best.kind === 'info' ? '📖' : best.open ? '🚪' : '🔒';
+    tipEl.querySelector('b').textContent = best.kind === 'info' ? `${best.label} 알아보기` : best.open ? `${best.label} 들어가기` : `${best.label} 곧 열려요`;
+  }
+  const near = bd < best.r + 0.6; tipEl.classList.toggle('near', near);
+  tipEl.style.left = ((tipV.x * 0.5 + 0.5) * innerWidth) + 'px'; tipEl.style.top = ((-tipV.y * 0.5 + 0.5) * innerHeight) + 'px';
+  tipEl.hidden = false;
+}
+
 function frameLoop() {
   requestAnimationFrame(frameLoop);
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
@@ -481,6 +504,8 @@ function frameLoop() {
     const sp = Math.hypot(vel.x, vel.z);
     if (sp > 0.3) { const a = Math.atan2(vel.x, vel.z); let da = a - facing; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; facing += da * (1 - Math.exp(-14 * dt)); }
     player.rotation.y = facing;
+    if (playerRig) playerRig.update(dt, settings.calm ? 0 : sp, AVATARS[settings.avatar].size);
+    if (npcRig) npcRig.update(dt, 0);
     if (sp > 0.3 && !settings.calm) { walkT += dt * sp * 1.4; playerBody.position.y = Math.abs(Math.sin(walkT)) * 0.09; playerBody.rotation.z = Math.sin(walkT) * 0.05; } else { playerBody.position.y *= 0.8; playerBody.rotation.z *= 0.8; }
 
     // 주변 확인
@@ -493,7 +518,6 @@ function frameLoop() {
     if (sayTimer > 0) sayTimer -= dt;
     else if (zn) say(!zn.open ? `${zn.label}은(는) 곧 열려요!` : settings.easy ? `${zn.label}! 잠깐 서 있으면 들어가요.` : `${zn.label}! 들어가기 버튼을 눌러요.`);
     else if (nearLocked) say(`${nearLocked.label}이에요. 곧 문을 열어요!`);
-    else if (Math.hypot(p.x - GUIDE_POS.x, p.z - GUIDE_POS.z) < 5) say('안녕! 노란 핀이 있는 곳으로 가 봐요.');
     else if (!route) say(flags.gym ? '체험 장소의 동그란 빛에 서면 게임이 열려요!' : '방향 버튼으로 걷고, 노란 핀이 체육관 입구예요!');
     if (zn && zn.open && settings.easy) { dwell += dt; $('#dwell').style.setProperty('--p', Math.min(1, Math.max(0, dwell) / CONFIG.autoEnterSeconds)); if (dwell >= CONFIG.autoEnterSeconds) { dwell = 0; enterZone(zn); } }
     else { if (dwell !== 0) dwell = Math.min(0, dwell + dt); $('#dwell').style.setProperty('--p', 0); }
@@ -506,7 +530,6 @@ function frameLoop() {
   zones.forEach((z) => { const s = z.open ? pulse : 1; z.ring.scale.setScalar(s); });
   const tg = routeTarget || nextTarget();
   pinHolder.position.set(tg.x, 3.2 + (calm ? 0 : Math.sin(t * 2.4) * 0.35), tg.z); pinHolder.rotation.y = calm ? 0 : t * 1.2;
-  if (guide) guide.position.y = calm ? 0 : Math.abs(Math.sin(t * 2)) * 0.06;
   npc.rotation.y = Math.sin(t * 0.5) * 0.4;
 
   // 카메라: 고정 각도로 따라감
@@ -519,6 +542,7 @@ function frameLoop() {
     camera.lookAt(player.position.x * 0.98, 1.2, player.position.z * 0.98 - 2.2);
   }
   sun.position.set(player.position.x - 22, 38, player.position.z + 16); sun.target.position.copy(player.position); sun.target.updateMatrixWorld();
+  updateTip();
   renderer.render(scene, camera);
   if (mode === 'world') drawMap(t);
 }

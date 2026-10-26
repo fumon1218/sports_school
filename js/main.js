@@ -1,6 +1,6 @@
 import * as THREE from '../vendor/three/three.module.js';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
-import { CONFIG, INFO, SPORTS, BUILDINGS, STATIONS, DECOR, CHERRY, GREEN, GATE, WORLD, CAMPUS, NATURE, LAKE, MAP, PLAYER_START } from './config.js';
+import { CONFIG, INFO, SPORTS, BUILDINGS, STATIONS, DECOR, CHERRY, GREEN, GATE, WORLD, CAMPUS, NATURE, LAKE, MAP, PLAYER_START, GUIDE_POS } from './config.js';
 import { autoRig } from './rig.js';
 import * as P from './placeholders.js';
 
@@ -194,7 +194,9 @@ const pinFallback = P.buildMarker(); pinHolder.add(pinFallback);
 loadModel('pin.glb').then((src) => { if (!src) return; pinHolder.remove(pinFallback); const m = fitModel(src, 2.2); pinHolder.add(m); });
 
 /* ---------- 주인공, 친구, 안내원 ---------- */
-const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelchair: { model: 'wheelchair.glb', size: 2.2, name: '휠체어 선수' } };
+const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelchair: { model: 'wheelchair.glb', size: 2.2, name: '휠체어 선수' },
+  girl: { model: 'girl.glb', size: 2.3, name: '여학생' }, girl_wheelchair: { model: 'girl_wheelchair.glb', size: 2.2, name: '휠체어 여학생' } };
+const PARTNER = { boy: 'wheelchair', wheelchair: 'boy', girl: 'girl_wheelchair', girl_wheelchair: 'girl' };
 const player = new THREE.Group(); player.position.set(PLAYER_START.x, 0, PLAYER_START.z); scene.add(player);
 const playerBody = new THREE.Group(); player.add(playerBody);
 const npc = new THREE.Group(); npc.position.set(-3, 0, 16); scene.add(npc);
@@ -202,7 +204,7 @@ let playerRig = null, npcRig = null;
 function setAvatar(key) {
   settings.avatar = key; store.set('avatar', key);
   playerBody.clear(); npc.clear(); playerRig = null; npcRig = null;
-  const other = key === 'boy' ? 'wheelchair' : 'boy';
+  const other = PARTNER[key] || 'boy';
   const fb = P.buildPlayer(); playerBody.add(fb);
   loadModel(AVATARS[key].model).then((src) => { if (!src) return; playerBody.remove(fb); const m = fitModel(src, AVATARS[key].size); playerBody.add(m); playerRig = autoRig(m, key); });
   loadModel(AVATARS[other].model).then((src) => { if (!src) return; const m = fitModel(src, AVATARS[other].size); npc.add(m); npcRig = autoRig(m, other); });
@@ -245,6 +247,61 @@ function smooth(pts, from, to) { // 보이는 곳까지 곧장 가도록 중간 
   const out = []; let cur = { x: from.x, z: from.z }, i = 0;
   while (i < pts.length) { let far = i; for (let k = pts.length - 1; k > i; k--) if (los(cur, pts[k])) { far = k; break; } out.push(pts[far]); cur = pts[far]; i = far + 1; }
   out.push({ x: to.x, z: to.z }); return out;
+}
+
+/* ---------- 캠퍼스를 오가는 사람들, 광장 안내 다람쥐 ---------- */
+const CROWD = [
+  { file: 'pe_teacher.glb', rig: 'teacher', size: 2.5, v: 2.3 }, { file: 'coach.glb', rig: 'coach', size: 2.4, v: 2.2 },
+  { file: 'girl.glb', rig: 'girl', size: 2.3, v: 2.4 }, { file: 'kid.glb', rig: 'kid', size: 1.7, v: 2.0 },
+  { file: 'girl_wheelchair.glb', rig: 'girl_wheelchair', size: 2.2, v: 2.4 }, { file: 'boy.glb', rig: 'boy', size: 2.4, v: 2.4 },
+  { file: 'wheelchair.glb', rig: 'wheelchair', size: 2.2, v: 2.4 }, { file: 'kid.glb', rig: 'kid', size: 1.7, v: 2.1 }, { file: 'girl.glb', rig: 'girl', size: 2.3, v: 2.2 },
+];
+const WALK_PTS = [[-20, 17], [-6, 19], [6, 17], [12, 19], [22, 18], [31, 19], [40, 18], [-12, 4], [0, 7], [10, 3], [-2, -6], [20, -8], [-22, -2], [-36, 17], [0, -14], [36, -6], [-8, 24], [8, 26], [-24, 12], [25, 4]].map(([x, z]) => ({ x, z }));
+const crowd = [];
+function spawnCrowd() {
+  const n = matchMedia('(max-width: 700px)').matches ? 5 : CROWD.length;
+  const pts = WALK_PTS.filter((p) => !blockedAt(p.x, p.z, 1.2));
+  for (let i = 0; i < n; i++) {
+    const def = CROWD[i], start = pts[(i * 7 + 3) % pts.length];
+    const g = new THREE.Group(); g.position.set(start.x, 0, start.z); g.rotation.y = i * 2.1; scene.add(g);
+    const c = { g, def, rig: null, route: [], wait: Math.random() * 3, face: g.rotation.y, spd: 0 };
+    loadModel(def.file).then((src) => { if (!src) return; const m = fitModel(src, def.size); g.add(m); c.rig = autoRig(m, def.rig); });
+    crowd.push(c);
+  }
+}
+function pickRoute(c) {
+  const pts = WALK_PTS.filter((p) => !blockedAt(p.x, p.z, 1.2) && Math.hypot(p.x - c.g.position.x, p.z - c.g.position.z) > 8);
+  const t = pts[Math.floor(Math.random() * pts.length)]; if (!t) return;
+  c.route = findPath({ x: c.g.position.x, z: c.g.position.z }, t);
+}
+function updateCrowd(dt) {
+  for (const c of crowd) {
+    const p = c.g.position; let target = 0;
+    if (!settings.calm) {
+      const dp = Math.hypot(player.position.x - p.x, player.position.z - p.z);
+      if (c.wait > 0) c.wait -= dt;
+      else if (!c.route.length) { pickRoute(c); if (!c.route.length) c.wait = 2; }
+      else if (dp > 1.6) {
+        const t = c.route[0], dx = t.x - p.x, dz = t.z - p.z, d = Math.hypot(dx, dz);
+        if (d < 0.5) { c.route.shift(); if (!c.route.length) c.wait = 2 + Math.random() * 5; }
+        else { target = c.def.v; p.x += dx / d * target * dt; p.z += dz / d * target * dt; c.face = Math.atan2(dx, dz); }
+      }
+    }
+    c.spd += (target - c.spd) * (1 - Math.exp(-6 * dt));
+    let da = c.face - c.g.rotation.y; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+    c.g.rotation.y += da * (1 - Math.exp(-8 * dt));
+    if (c.rig) c.rig.update(dt, c.spd * 2.2, c.def.size);
+  }
+}
+// 광장 안내 다람쥐: 제자리에서 통통 뛰며 가까이 오는 사람을 바라봐요.
+const mascotG = new THREE.Group(); mascotG.position.set(GUIDE_POS.x, 0, GUIDE_POS.z); scene.add(mascotG); circles.push({ x: GUIDE_POS.x, z: GUIDE_POS.z, r: 1.0 });
+loadModel('mascot.glb').then((src) => { if (!src) return; const m = fitModel(src, 3.4); mascotG.add(m); mascotG.userData.m = m; });
+function updateMascot(t, dt) {
+  const m = mascotG.userData.m; if (!m) return;
+  const dx = player.position.x - GUIDE_POS.x, dz = player.position.z - GUIDE_POS.z, near = Math.hypot(dx, dz) < 12;
+  if (near) { let da = Math.atan2(dx, dz) - mascotG.rotation.y; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; mascotG.rotation.y += da * (1 - Math.exp(-5 * dt)); }
+  if (settings.calm) { m.position.y *= 0.8; m.rotation.z *= 0.8; return; }
+  const hop = near ? 0.22 : 0.08; m.position.y = Math.abs(Math.sin(t * (near ? 3.2 : 1.6))) * hop; m.rotation.z = Math.sin(t * (near ? 3.2 : 1.6)) * 0.05;
 }
 
 /* ---------- 입력 ---------- */
@@ -504,6 +561,7 @@ function frameLoop() {
     const sp = Math.hypot(vel.x, vel.z);
     if (sp > 0.3) { const a = Math.atan2(vel.x, vel.z); let da = a - facing; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; facing += da * (1 - Math.exp(-14 * dt)); }
     player.rotation.y = facing;
+    updateCrowd(dt); updateMascot(t, dt);
     if (playerRig) playerRig.update(dt, settings.calm ? 0 : sp, AVATARS[settings.avatar].size);
     if (npcRig) npcRig.update(dt, 0);
     if (sp > 0.3 && !settings.calm) { walkT += dt * sp * 1.4; playerBody.position.y = Math.abs(Math.sin(walkT)) * 0.09; playerBody.rotation.z = Math.sin(walkT) * 0.05; } else { playerBody.position.y *= 0.8; playerBody.rotation.z *= 0.8; }
@@ -518,6 +576,7 @@ function frameLoop() {
     if (sayTimer > 0) sayTimer -= dt;
     else if (zn) say(!zn.open ? `${zn.label}은(는) 곧 열려요!` : settings.easy ? `${zn.label}! 잠깐 서 있으면 들어가요.` : `${zn.label}! 들어가기 버튼을 눌러요.`);
     else if (nearLocked) say(`${nearLocked.label}이에요. 곧 문을 열어요!`);
+    else if (Math.hypot(p.x - GUIDE_POS.x, p.z - GUIDE_POS.z) < 6) say('안녕! 나는 안내 다람쥐야. 노란 핀이 있는 곳으로 가 봐요.');
     else if (!route) say(flags.gym ? '체험 장소의 동그란 빛에 서면 게임이 열려요!' : '방향 버튼으로 걷고, 노란 핀이 체육관 입구예요!');
     if (zn && zn.open && settings.easy) { dwell += dt; $('#dwell').style.setProperty('--p', Math.min(1, Math.max(0, dwell) / CONFIG.autoEnterSeconds)); if (dwell >= CONFIG.autoEnterSeconds) { dwell = 0; enterZone(zn); } }
     else { if (dwell !== 0) dwell = Math.min(0, dwell + dt); $('#dwell').style.setProperty('--p', 0); }
@@ -546,7 +605,7 @@ function frameLoop() {
   renderer.render(scene, camera);
   if (mode === 'world') drawMap(t);
 }
-setAvatar(settings.avatar);
+setAvatar(settings.avatar); spawnCrowd();
 frameLoop();
 
 // 점검용
@@ -555,4 +614,4 @@ function debugShow() { // 충돌 범위와 입장 원을 위에서 본 모습으
   boxes.forEach((b) => { const o = new THREE.Mesh(new THREE.BoxGeometry(b.x1 - b.x0, 2, b.z1 - b.z0), m); o.position.set((b.x0 + b.x1) / 2, 1, (b.z0 + b.z1) / 2); scene.add(o); });
   circles.forEach((c) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(c.r, c.r, 2, 16), m); o.position.set(c.x, 1, c.z); scene.add(o); });
 }
-window.__ssw = { player, get mode() { return mode; }, enterGym, openGame, enterZone, zones, SPORTS, scene, camera, boxes, circles, debugShow, topDown: (v = true) => { topDown = v; }, findPath, loadedOk, loadedFail, medals, flags, startGuide, get route() { return route; }, setAvatar };
+window.__ssw = { crowd, player, get mode() { return mode; }, enterGym, openGame, enterZone, zones, SPORTS, scene, camera, boxes, circles, debugShow, topDown: (v = true) => { topDown = v; }, findPath, loadedOk, loadedFail, medals, flags, startGuide, get route() { return route; }, setAvatar };

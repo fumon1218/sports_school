@@ -9,47 +9,63 @@ const segDist = (px, py, ax, ay, bx, by) => {
   return Math.hypot(px - (ax + dx * t), py - (ay + dy * t));
 };
 
-// 관절 위치와 가중치 규칙 (키를 1로 맞춘 좌표)
-const SPECS = {
-  boy: {
-    bones: [['hips', null, 0, 0.45, 0], ['spine', 'hips', 0, 0.52, 0], ['head', 'spine', 0, 0.70, 0],
-      ['armL', 'spine', 0.13, 0.66, 0], ['armR', 'spine', -0.13, 0.66, 0],
-      ['legL', 'hips', 0.07, 0.45, 0], ['legR', 'hips', -0.07, 0.45, 0],
-      ['kneeL', 'legL', 0.07, 0.23, 0], ['kneeR', 'legR', -0.07, 0.23, 0]],
+// 사람 모양 캐릭터: 관절 위치만 정해 주면 가중치를 만듭니다 (키를 1로 맞춘 좌표)
+// hip 엉덩이 높이, knee 무릎, sx·sy 어깨, hx·hy 손끝, neck 목, legX 다리 간격
+function humanoid(p) {
+  const { hip, knee, sx, sy, hx, hy, neck, legX } = p;
+  return {
+    type: 'human', stride: p.stride || 1.15,
+    bones: [['hips', null, 0, hip, 0], ['spine', 'hips', 0, hip + 0.07, 0], ['head', 'spine', 0, neck - 0.02, 0],
+      ['armL', 'spine', sx, sy, 0], ['armR', 'spine', -sx, sy, 0],
+      ['legL', 'hips', legX, hip, 0], ['legR', 'hips', -legX, hip, 0],
+      ['kneeL', 'legL', legX, knee, 0], ['kneeR', 'legR', -legX, knee, 0]],
     weights(x, y) {
-      const w = {}; const s = x >= 0 ? 1 : -1, S = s > 0 ? 'L' : 'R';
-      const wH = ss(0.66, 0.74, y);
-      const dA = segDist(Math.abs(x), y, 0.13, 0.66, 0.34, 0.35), dT = segDist(Math.abs(x), y, 0, 0.45, 0, 0.68);
-      const wA = ss(-0.01, 0.04, dT - dA) * (1 - ss(0.66, 0.72, y)) * ss(0.28, 0.34, y);
+      const w = {}; const S = x >= 0 ? 'L' : 'R';
+      const wH = ss(neck - 0.04, neck + 0.04, y);
+      const ax = Math.abs(x);
+      const dA = segDist(ax, y, sx, sy, hx, hy), dT = segDist(ax, y, 0, hip, 0, neck - 0.02);
+      const wA = ss(-0.01, 0.04, dT - dA) * (1 - ss(sy, sy + 0.06, y)) * ss(hy - 0.07, hy - 0.01, y);
       const r = Math.max(0, 1 - wH - wA);
-      const leg = r * (1 - ss(0.38, 0.46, y)), torso = r - leg;
-      const lowerK = ss(0.30, 0.18, y);
+      const leg = r * (1 - ss(hip - 0.07, hip + 0.01, y)), torso = r - leg;
+      const lowerK = ss(knee + 0.07, knee - 0.05, y);
       const sideL = ss(-0.03, 0.03, x);
       w.head = wH; w['arm' + S] = wA;
       for (const [side, f] of [['L', sideL], ['R', 1 - sideL]]) { w['leg' + side] = (w['leg' + side] || 0) + leg * f * (1 - lowerK); w['knee' + side] = (w['knee' + side] || 0) + leg * f * lowerK; }
-      w.spine = torso * ss(0.46, 0.56, y); w.hips = torso - w.spine;
+      w.spine = torso * ss(hip + 0.01, hip + 0.11, y); w.hips = torso - w.spine;
       return w;
     },
-    walk: { stride: 1.15 },
-  },
-  wheelchair: {
-    bones: [['hips', null, 0, 0.45, 0], ['spine', 'hips', 0, 0.52, 0], ['head', 'spine', 0, 0.68, 0],
-      ['armL', 'spine', 0.12, 0.62, 0], ['armR', 'spine', -0.12, 0.62, 0],
-      ['wheelL', 'hips', 0.33, 0.26, -0.11], ['wheelR', 'hips', -0.33, 0.26, -0.11]],
+  };
+}
+// 휠체어 이용 캐릭터: 바퀴 중심(wcx, wcy, wcz)과 반지름 wr
+function wheelchair(p) {
+  const { wcx, wcy, wcz, wr, sx, sy, hx, hy, neck } = p;
+  return {
+    type: 'wheel', stride: 1.0,
+    bones: [['hips', null, 0, 0.45, 0], ['spine', 'hips', 0, 0.52, 0], ['head', 'spine', 0, neck - 0.02, 0],
+      ['armL', 'spine', sx, sy, 0], ['armR', 'spine', -sx, sy, 0],
+      ['wheelL', 'hips', wcx, wcy, wcz], ['wheelR', 'hips', -wcx, wcy, wcz]],
     weights(x, y, z) {
-      const w = {}; const S = x >= 0 ? 'L' : 'R';
-      const wH = ss(0.64, 0.72, y);
-      const dA = segDist(Math.abs(x), y, 0.12, 0.62, 0.40, 0.45), dT = segDist(Math.abs(x), y, 0, 0.5, 0, 0.66);
-      const wA = ss(-0.01, 0.04, dT - dA) * (1 - ss(0.64, 0.70, y)) * ss(0.38, 0.43, y) * ss(0.09, 0.13, Math.abs(x)) * ss(-0.22, -0.16, z) * ss(0.11, 0.06, dA);
-      const d = Math.hypot(y - 0.26, z + 0.11);
-      const wW = ss(0.31, 0.275, d) * ss(0.23, 0.26, Math.abs(x)) * (1 - wA);
+      const w = {}; const S = x >= 0 ? 'L' : 'R'; const ax = Math.abs(x);
+      const wH = ss(neck - 0.04, neck + 0.04, y);
+      const dA = segDist(ax, y, sx, sy, hx, hy), dT = segDist(ax, y, 0, 0.5, 0, neck - 0.02);
+      const wA = ss(-0.01, 0.04, dT - dA) * (1 - ss(sy, sy + 0.06, y)) * ss(hy - 0.02, hy + 0.03, y) * ss(sx - 0.03, sx + 0.01, ax) * ss(wcz - 0.1, wcz - 0.04, z) * ss(0.11, 0.06, dA);
+      const d = Math.hypot(y - wcy, z - wcz);
+      const wW = ss(wr + 0.07, wr + 0.035, d) * ss(wcx - 0.1, wcx - 0.07, ax) * (1 - wA);
       const r = Math.max(0, 1 - wH - wA - wW);
       w.head = wH; w['arm' + S] = wA; w['wheel' + S] = wW;
       w.spine = r * ss(0.5, 0.6, y); w.hips = r - w.spine;
       return w;
     },
-    walk: { stride: 1.0 },
-  },
+  };
+}
+const SPECS = {
+  boy: humanoid({ hip: 0.45, knee: 0.23, sx: 0.13, sy: 0.66, hx: 0.34, hy: 0.35, neck: 0.70, legX: 0.07 }),
+  teacher: humanoid({ hip: 0.40, knee: 0.17, sx: 0.15, sy: 0.70, hx: 0.24, hy: 0.33, neck: 0.78, legX: 0.07, stride: 1.0 }),
+  coach: humanoid({ hip: 0.41, knee: 0.17, sx: 0.12, sy: 0.68, hx: 0.19, hy: 0.35, neck: 0.76, legX: 0.06, stride: 1.0 }),
+  girl: humanoid({ hip: 0.39, knee: 0.17, sx: 0.13, sy: 0.63, hx: 0.21, hy: 0.33, neck: 0.70, legX: 0.06, stride: 1.05 }),
+  kid: humanoid({ hip: 0.30, knee: 0.13, sx: 0.13, sy: 0.50, hx: 0.29, hy: 0.28, neck: 0.58, legX: 0.07, stride: 1.3 }),
+  wheelchair: wheelchair({ wcx: 0.33, wcy: 0.26, wcz: -0.11, wr: 0.24, sx: 0.12, sy: 0.62, hx: 0.40, hy: 0.45, neck: 0.70 }),
+  girl_wheelchair: wheelchair({ wcx: 0.31, wcy: 0.23, wcz: -0.13, wr: 0.23, sx: 0.14, sy: 0.64, hx: 0.32, hy: 0.40, neck: 0.68 }),
 };
 
 export function autoRig(group, kind) {
@@ -99,11 +115,11 @@ export function autoRig(group, kind) {
   }
   for (const [m, sm] of rigged) { m.parent.remove(m); group.add(sm); }
   group.add(root); group.updateMatrixWorld(true); skeleton.calculateInverses();
-  for (const [, sm] of rigged) sm.bind(skeleton, new THREE.Matrix4());
+  for (const [, sm] of rigged) { sm.updateMatrixWorld(true); sm.bind(skeleton, sm.matrixWorld.clone()); }
 
   // ---- 동작 ----
   let phase = Math.random() * 6, amt = 0, wheel = 0, clock = Math.random() * 10;
-  const stride = spec.walk.stride;
+  const stride = spec.stride;
   const rx = (b, a) => { if (b) b.rotation.x = a; };
   return {
     kind, bones,
@@ -114,7 +130,7 @@ export function autoRig(group, kind) {
       const breathe = Math.sin(clock * 2.2) * (1 - amt);
       bones.spine.scale.y = 1 + breathe * 0.012;
       bones.head.rotation.x = Math.sin(clock * 1.3) * 0.03 * (1 - amt) + Math.sin(phase * 2) * 0.03 * amt;
-      if (kind === 'boy') {
+      if (spec.type === 'human') {
         for (const S of ['L', 'R']) {
           const ph = phase + (S === 'L' ? 0 : Math.PI);
           rx(bones['leg' + S], -Math.sin(ph) * 0.65 * amt);

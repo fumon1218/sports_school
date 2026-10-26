@@ -99,8 +99,8 @@ body[data-mode="title"] #hud{display:none}
 }
 @media (prefers-reduced-motion:reduce){#act.ready{animation:none}#fade{transition-duration:.05s}#toast{transition:none}}
 
-.avatars{display:flex;gap:10px;justify-content:center;margin:0 0 12px}
-.avatar{flex:1;max-width:190px;padding:10px 8px;border-radius:18px;border:4px solid var(--line);background:#fff;color:var(--ink);font-size:17px;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:2px}
+.avatars{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 12px}
+.avatar{flex:1 1 40%;max-width:190px;min-width:120px;padding:10px 8px;border-radius:18px;border:4px solid var(--line);background:#fff;color:var(--ink);font-size:17px;font-weight:800;display:flex;flex-direction:column;align-items:center;gap:2px}
 .avatar span{font-size:34px;line-height:1.1}.avatar.on{border-color:#ff7a45;background:#fff3ea}
 #medal-pop{position:fixed;left:50%;top:50%;transform:translate(-50%,-40%) scale(.6);opacity:0;z-index:70;pointer-events:none;background:#fffdf8;border:5px solid #ffd966;border-radius:28px;padding:18px 28px 16px;text-align:center;box-shadow:0 14px 40px #0005;transition:.4s cubic-bezier(.2,1.4,.4,1)}
 #medal-pop.show{opacity:1;transform:translate(-50%,-50%) scale(1)}

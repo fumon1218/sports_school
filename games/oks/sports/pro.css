@@ -1,0 +1,40 @@
+/* ⚾ 스타 리그 (야구 전문가반) — 야구 화면(bb-*) 위에 얹는 스타일 */
+.pr-board .pr-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:#10312a;border:3px solid #0a1f1b;border-radius:18px;padding:6px 16px;color:#d9ffe8;box-shadow:inset 0 0 14px rgba(0,0,0,.45);width:100%;box-sizing:border-box}
+.pr-tm{display:flex;align-items:baseline;gap:8px}.pr-tm b{font-weight:400;font-size:clamp(14px,1.6vw,18px);color:#fff4b0}.pr-tm em{font-style:normal;font-size:clamp(26px,3.4vw,38px);color:#fff}
+.pr-tm.opp b{color:#ffb3b3}.pr-vs{font-size:26px;opacity:.7}
+.pr-inn{background:#2b5a22;border-radius:12px;padding:3px 12px;font-size:clamp(14px,1.6vw,18px);color:#fff}
+.pr-out{display:flex;align-items:center;gap:4px}.pr-out small{margin-right:2px;opacity:.8}.pr-out i{width:14px;height:14px;border-radius:50%;background:#2c5547}.pr-out i.on{background:#ff5d4d;box-shadow:0 0 6px #ff5d4d}
+.pr-dia{position:relative;width:46px;height:40px}.pr-dia u{position:absolute;width:13px;height:13px;transform:rotate(45deg);background:#2c5547;border:1px solid #6db39a}
+.pr-dia u.on{background:#ffd93d;border-color:#fff;box-shadow:0 0 6px #ffd93d}.pr-dia .b2{left:16px;top:0}.pr-dia .b3{left:2px;top:14px}.pr-dia .b1{left:30px;top:14px}.pr-dia .b0{left:16px;top:28px;background:#d9ffe8}
+.pr-plate{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:9;display:none;flex-direction:column;align-items:center;background:rgba(255,255,255,.95);border-radius:16px;padding:5px 16px;box-shadow:0 4px 12px rgba(0,0,0,.25);text-align:center;max-width:92%}
+.pr-plate.show{display:flex}.pr-plate b{font-weight:400;font-size:clamp(16px,2vw,22px);color:#4a2fb5}.pr-plate small{font-size:clamp(11px,1.2vw,14px);color:#6a5aa0}
+.pr-plate[data-k=fast] b{color:#d6361f}.pr-plate[data-k=curve] b{color:#1f7ad6}.pr-plate[data-k=slider] b{color:#8a3fd6}.pr-plate[data-k=change] b{color:#1f9a58}
+.pr-dock{min-height:96px}
+.pr-picks{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%}
+.pr-pk{display:flex!important;flex-direction:column;align-items:center;gap:1px;min-width:clamp(150px,22vw,230px);min-height:96px;padding:8px 14px!important;line-height:1.2;white-space:normal;text-align:center}
+.pr-pk span{font-size:28px}.pr-pk b{font-weight:400;font-size:clamp(17px,2vw,22px)}.pr-pk small{font-size:clamp(11px,1.2vw,13px);opacity:.9;font-weight:400}
+.pr-meterwrap{display:flex;flex-direction:column;align-items:center;gap:8px;width:min(560px,100%)}
+.pr-meter{position:relative;width:100%;height:30px;border-radius:15px;background:#dbe3f3;box-shadow:inset 0 0 0 3px #fff,0 3px 8px rgba(0,0,0,.15)}
+.pr-mz{position:absolute;left:50%;top:3px;bottom:3px;transform:translateX(-50%);border-radius:12px;background:#4cd47c}
+.pr-mk{position:absolute;top:-4px;width:12px;height:38px;border-radius:6px;background:#ff5d4d;transform:translateX(-50%);left:0;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+@media(max-width:760px){.pr-board .pr-bar{gap:8px;padding:4px 10px}.pr-pk{min-width:calc(50% - 10px)}}
+/* 야구 목차의 스타 리그 입구 */
+.pro-block{margin:18px 0 6px;padding:14px 16px;border-radius:22px;background:linear-gradient(135deg,#1f3a8a,#5b3fc4);color:#fff;box-shadow:0 8px 20px rgba(40,30,120,.35)}
+.pro-block.lock{background:linear-gradient(135deg,#7b83a3,#9a92c0)}
+.pro-head{display:flex;gap:12px;align-items:center}.pro-ic{font-size:42px}
+.pro-head h2{margin:0;font-weight:400;font-size:clamp(20px,2.6vw,28px)}.pro-head h2 small{font-size:.55em;opacity:.85}.pro-head p{margin:2px 0 0;font-size:clamp(13px,1.5vw,16px);opacity:.95}
+.pro-modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
+.pro-mode{background:rgba(255,255,255,.95);color:#2c2a40;border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.pro-block.lock .pro-mode{opacity:.65}
+.pro-mic{font-size:34px}.pro-mode b{font-weight:400;font-size:clamp(17px,2vw,21px);color:#3b2a8f}.pro-mode small{font-size:clamp(12px,1.3vw,14px);color:#6a5aa0;line-height:1.35;min-height:2.7em}
+.pro-lv{display:flex;gap:5px;align-items:center;margin-top:4px}.pro-lv em{font-style:normal;font-size:12px;color:#8a7bb8;margin-right:2px}
+.pro-lv a,.pro-lv span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;border-radius:12px;background:#6a4bdc;color:#fff;text-decoration:none;font-size:17px}
+.pro-lv span{background:#c9c4de}
+.pro-teacher{margin-top:10px;font-size:14px}.pro-teacher summary{cursor:pointer;opacity:.9}.pro-teacher .oks-btn{margin-top:6px}
+/* 클로즈업 카메라 */
+.pr-cam{position:absolute;inset:0;will-change:transform}
+.pr-slowtag{position:absolute;left:50%;top:38%;transform:translateX(-50%);z-index:9;display:none;background:rgba(20,10,60,.78);color:#fff;border-radius:999px;padding:4px 16px;font-size:clamp(14px,1.8vw,20px);letter-spacing:.5px;pointer-events:none}
+.pr-slowtag.show{display:block;animation:oks-pop .25s}
+.pr-camtog{position:absolute;right:10px;bottom:8px;z-index:9;border:0;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;background:rgba(255,255,255,.9);color:#4a2fb5;cursor:pointer;min-height:34px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.pr-camtog.off{color:#8a7bb8;background:rgba(255,255,255,.7)}
+.pr-stage-fix{}

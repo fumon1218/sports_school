@@ -1,0 +1,38 @@
+/* 씽씽별 탁구 게임 */
+.pp-board{gap:14px!important;padding:14px!important}
+.pp-stage{position:relative;width:100%;height:380px;border-radius:24px;overflow:hidden;background:#8fd1ff;box-shadow:inset 0 0 0 4px rgba(255,255,255,.8),0 6px 16px rgba(40,60,90,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.pp-sky{position:absolute;inset:0;background:center 45%/cover no-repeat}
+.pp-stage img{position:absolute;display:block;pointer-events:none;user-select:none;width:auto}
+.pp-stage img[hidden]{display:none}
+.pp-girl{bottom:2%;transform:translateX(-50%);z-index:4;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25))}
+.pp-boy{bottom:2%;transform:translateX(-50%);z-index:4;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25))}
+.pp-ring{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;border:5px dashed #fff;box-shadow:0 0 0 3px rgba(40,140,70,.7);background:rgba(61,220,111,.25);z-index:3;pointer-events:none}
+.pp-ring[hidden]{display:none}
+.pp-ring.now{background:rgba(61,220,111,.6);border-style:solid;animation:ppRing .45s infinite alternate}
+@keyframes ppRing{to{transform:scale(1.18);box-shadow:0 0 0 3px #1b9c46,0 0 20px 8px rgba(255,235,80,.8)}}
+.pp-ball{--s:1;width:3.6%;max-width:30px;min-width:15px;left:0;top:0;transform:translate(-50%,-50%) scale(var(--s));filter:drop-shadow(0 4px 3px rgba(0,0,0,.3));z-index:6}
+.pp-fx{position:absolute;inset:0;pointer-events:none;z-index:7}
+.pp-star{position:absolute;font-size:42px;margin:-21px 0 0 -21px;animation:ppStar .8s ease-out forwards}
+@keyframes ppStar{from{transform:scale(.4);opacity:1}to{transform:scale(1.8) translateY(-24px);opacity:0}}
+.pp-hud{position:absolute;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none;z-index:9;flex-wrap:wrap}
+.pp-hud>span{background:rgba(255,255,255,.94);border-radius:999px;padding:5px 14px;font-weight:900;font-size:18px;color:#5a3b00;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.pp-now{font-size:16px!important;color:#c0392b!important}
+.pp-banner{position:absolute;left:50%;top:19%;transform:translate(-50%,-50%) scale(.6);font-size:44px;font-weight:900;color:#fff;-webkit-text-stroke:2px #d9453a;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;white-space:nowrap;z-index:10;text-align:center}
+.pp-banner.show{animation:ppBan .3s ease-out forwards}
+@keyframes ppBan{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.pp-dock{min-height:92px;display:flex;align-items:center;justify-content:center;width:100%}
+.pp-main{min-width:260px;min-height:80px;font-size:34px!important;touch-action:manipulation}
+.pp-main.now{animation:ppNow .6s infinite alternate}
+@keyframes ppNow{to{transform:scale(1.06);box-shadow:0 0 0 8px rgba(255,213,79,.55)}}
+.pp-gate{width:100%;display:flex;justify-content:center}
+.pp-gate .oks-card{background:#fff}
+@media (max-width:760px){
+  .pp-stage{height:290px}.pp-main{min-width:200px;min-height:68px;font-size:28px!important}.pp-banner{font-size:30px}
+  .pp-hud>span{font-size:15px;padding:4px 10px}.pp-ring{width:56px;height:56px;margin:-28px 0 0 -28px}
+}
+@media (prefers-reduced-motion:reduce){.pp-main.now,.pp-ring.now{animation:none}}
+
+.pp-hud>.pp-rally{position:absolute;left:0;top:44px;font-size:17px!important}
+.pp-rally{background:linear-gradient(#ffb74d,#ff8a3d)!important;color:#fff!important}
+.pp-rally.pop{animation:rallyPop .35s ease}
+@keyframes rallyPop{40%{transform:scale(1.25)}}

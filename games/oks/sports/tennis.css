@@ -1,0 +1,40 @@
+/* 씽씽별 테니스 게임 */
+.tn-board{gap:14px!important;padding:14px!important}
+.tn-stage{position:relative;width:100%;height:380px;border-radius:24px;overflow:hidden;background:#8fd1ff;box-shadow:inset 0 0 0 4px rgba(255,255,255,.8),0 6px 16px rgba(40,60,90,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.tn-sky{position:absolute;inset:0;background:center 85%/cover no-repeat}
+.tn-stage img{position:absolute;display:block;pointer-events:none;user-select:none;width:auto}
+.tn-stage img[hidden]{display:none}
+.tn-boy{bottom:6%;transform:translateX(-50%);z-index:4;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25))}
+.tn-netfg{position:absolute;inset:0;background:center 85%/cover no-repeat;z-index:3;pointer-events:none}
+.tn-girl{bottom:50%;transform:translateX(-50%);z-index:2;filter:drop-shadow(0 3px 3px rgba(0,0,0,.2))}
+.tn-girl.flip{transform:translateX(-50%) scaleX(-1)}
+.tn-ring{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;border-radius:50%;border:5px dashed #fff;box-shadow:0 0 0 3px rgba(40,140,70,.7);background:rgba(61,220,111,.25);z-index:3;pointer-events:none}
+.tn-ring[hidden]{display:none}
+.tn-ring.now{background:rgba(61,220,111,.6);border-style:solid;animation:tnRing .45s infinite alternate}
+@keyframes tnRing{to{transform:scale(1.18);box-shadow:0 0 0 3px #1b9c46,0 0 20px 8px rgba(255,235,80,.8)}}
+.tn-ball{--s:1;width:7%;max-width:46px;min-width:22px;left:0;top:0;transform:translate(-50%,-50%) scale(var(--s));filter:drop-shadow(0 4px 3px rgba(0,0,0,.3));z-index:6}
+.tn-fx{position:absolute;inset:0;pointer-events:none;z-index:7}
+.tn-star{position:absolute;font-size:42px;margin:-21px 0 0 -21px;animation:tnStar .8s ease-out forwards}
+@keyframes tnStar{from{transform:scale(.4);opacity:1}to{transform:scale(1.8) translateY(-24px);opacity:0}}
+.tn-hud{position:absolute;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none;z-index:9;flex-wrap:wrap}
+.tn-hud>span{background:rgba(255,255,255,.94);border-radius:999px;padding:5px 14px;font-weight:900;font-size:18px;color:#5a3b00;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.tn-now{font-size:16px!important;color:#1f5fbf!important}
+.tn-banner{position:absolute;left:50%;top:19%;transform:translate(-50%,-50%) scale(.6);font-size:44px;font-weight:900;color:#fff;-webkit-text-stroke:2px #2f6fd6;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;white-space:nowrap;z-index:10;text-align:center}
+.tn-banner.show{animation:tnBan .3s ease-out forwards}
+@keyframes tnBan{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.tn-dock{min-height:92px;display:flex;align-items:center;justify-content:center;width:100%}
+.tn-main{min-width:260px;min-height:80px;font-size:34px!important;touch-action:manipulation}
+.tn-main.now{animation:tnNow .6s infinite alternate}
+@keyframes tnNow{to{transform:scale(1.06);box-shadow:0 0 0 8px rgba(255,213,79,.55)}}
+.tn-gate{width:100%;display:flex;justify-content:center}
+.tn-gate .oks-card{background:#fff}
+@media (max-width:760px){
+  .tn-stage{height:290px}.tn-main{min-width:200px;min-height:68px;font-size:28px!important}.tn-banner{font-size:30px}
+  .tn-hud>span{font-size:15px;padding:4px 10px}.tn-ring{width:56px;height:56px;margin:-28px 0 0 -28px}
+}
+@media (prefers-reduced-motion:reduce){.tn-main.now,.tn-ring.now{animation:none}}
+
+.tn-hud>.tn-rally{position:absolute;left:0;top:44px;font-size:17px!important}
+.tn-rally{background:linear-gradient(#ffb74d,#ff8a3d)!important;color:#fff!important}
+.tn-rally.pop{animation:rallyPop .35s ease}
+@keyframes rallyPop{40%{transform:scale(1.25)}}

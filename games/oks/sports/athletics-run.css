@@ -1,0 +1,74 @@
+/* 씽씽별 육상 달리기 게임 — 우리 별 마을 놀이판(흰 판 + 장면 띠) 안에 들어가는 무대 */
+.rn-board{--ground:64px;gap:14px!important;padding:14px!important}
+.rn-stage{position:relative;width:100%;height:340px;border-radius:24px;overflow:hidden;background:#bfe6ff;box-shadow:inset 0 0 0 4px rgba(255,255,255,.8),0 6px 16px rgba(40,60,90,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.rn-sky{position:absolute;inset:0 0 0 0;background:center 30%/cover no-repeat}
+.rn-sky::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,0) 40%)}
+.rn-far{position:absolute;left:0;right:0;top:12px;height:70px;font-size:44px;pointer-events:none;white-space:nowrap;opacity:.9}
+.rn-far span{position:absolute;top:0}
+.rn-track{position:absolute;left:0;right:0;bottom:0;height:calc(var(--ground) + 34px);background:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.55) 0 4px,transparent 4px 120px),
+  linear-gradient(#e4743f,#c75b2b);background-size:120px 100%,100% 100%}
+.rn-edge{position:absolute;left:0;right:0;height:5px;background:rgba(255,255,255,.85)}
+.rn-edge.top{top:0}.rn-edge.bot{bottom:14px}
+.rn-world{position:absolute;inset:0;pointer-events:none}
+.rn-o{position:absolute;left:0;bottom:calc(var(--ground) + var(--y,0px));will-change:transform}
+.rn-o.coin{font-size:38px;line-height:1;margin-left:-19px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.25));transition:opacity .25s}
+.rn-o.coin.got{opacity:0}
+.rn-o.hurdle{width:66px;height:78px;margin-left:-33px}
+.rn-o.hurdle i{position:absolute;bottom:0;width:8px;height:78px;border-radius:3px;background:#fff;box-shadow:0 0 0 2px #455a74}
+.rn-o.hurdle i:first-child{left:0}.rn-o.hurdle i:nth-child(2){right:0}
+.rn-o.hurdle b{position:absolute;left:-4px;right:-4px;top:4px;height:20px;border-radius:5px;background:repeating-linear-gradient(90deg,#ff5d4d 0 14px,#fff 14px 28px);box-shadow:0 0 0 2px #455a74}
+.rn-o.hurdle.ok{opacity:.55}.rn-o.hurdle.hit{transform-origin:bottom}
+.rn-o.flag{margin-left:-24px;text-align:center;font-weight:900}
+.rn-o.flag span{display:block;font-size:56px;line-height:1;filter:drop-shadow(0 3px 3px rgba(0,0,0,.25))}
+.rn-o.flag em{display:inline-block;font-style:normal;font-size:16px;background:#fff;border-radius:10px;padding:1px 8px;color:#c0392b}
+.rn-o.zone{bottom:calc(var(--ground) + 58px);font-size:46px;margin-left:-23px}
+.rn-o.gate{margin-left:-36px;width:72px;height:170px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;transition:opacity .6s}
+.rn-o.gate b{font-size:64px;line-height:1;filter:drop-shadow(0 4px 3px rgba(0,0,0,.3))}
+.rn-o.gate em{font-style:normal;font-size:16px;font-weight:900;background:#ffd54f;border-radius:10px;padding:1px 8px;color:#5a3b00;margin-bottom:4px}
+.rn-o.gate.open{opacity:.15}
+.rn-o.friend{margin-left:-50px;width:100px}
+.rn-o.friend img{height:150px;width:auto;display:block;filter:drop-shadow(0 4px 4px rgba(0,0,0,.25))}
+.rn-o.friend.go img{animation:arAway .9s ease-in forwards}
+@keyframes arAway{to{transform:translateX(900px)}}
+.rn-o.ribbon{margin-left:-80px;width:160px;bottom:calc(var(--ground) - 4px)}
+.rn-o.ribbon img{width:160px;display:block;transform-origin:center bottom;filter:drop-shadow(0 4px 4px rgba(0,0,0,.25))}
+.rn-o.ribbon.cut img{animation:arCut .7s ease-out forwards}
+@keyframes arCut{to{transform:scale(1.3) rotate(-8deg);opacity:0}}
+.rn-runner{position:absolute;bottom:calc(var(--ground) - 6px);height:146px;width:auto;margin-left:-60px;filter:drop-shadow(0 6px 4px rgba(0,0,0,.28));pointer-events:none}
+.rn-runner.air{}
+.rn-runner.bump{animation:arBump .5s}
+@keyframes arBump{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px) rotate(-6deg)}60%{transform:translateX(6px) rotate(4deg)}}
+.rn-hud{position:absolute;left:12px;top:10px;right:12px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}
+.rn-hud span{background:rgba(255,255,255,.94);border-radius:999px;padding:5px 16px;font-weight:900;font-size:20px;color:#5a3b00;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.rn-now{font-size:17px!important;color:#6b4bb7!important}
+.rn-lights{position:absolute;left:50%;top:18px;transform:translateX(-50%);display:flex;gap:12px;background:#33384a;border-radius:999px;padding:10px 18px;box-shadow:0 6px 14px rgba(0,0,0,.3)}
+.rn-lights[hidden]{display:none}
+.rn-lights i{width:34px;height:34px;border-radius:50%;background:#555b6e;transition:background .2s}
+.rn-lights i.r.on{background:#ff4b3e;box-shadow:0 0 18px #ff4b3e}
+.rn-lights i.a.on{background:#ffc83d;box-shadow:0 0 18px #ffc83d}
+.rn-lights i.gr.on{background:#3ddc6f;box-shadow:0 0 22px #3ddc6f}
+.rn-banner{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);font-size:46px;font-weight:900;color:#fff;-webkit-text-stroke:2px #e0612f;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;white-space:nowrap}
+.rn-banner.show{animation:arBan .35s ease-out forwards}
+@keyframes arBan{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.rn-dock{min-height:92px;display:flex;align-items:center;justify-content:center;width:100%}
+.rn-main{min-width:260px;min-height:80px;font-size:34px!important;touch-action:manipulation}
+.rn-main.press{transform:translateY(4px) scale(.97)}
+.rn-gate{width:100%;display:flex;justify-content:center}
+.rn-gate .oks-card{background:#fff}
+.rn-baton{position:absolute;left:24%;bottom:150px;font-size:40px;animation:arBaton .8s ease-in-out forwards}
+@keyframes arBaton{to{left:46%;bottom:170px;transform:rotate(360deg)}}
+.rn-spark{position:absolute;bottom:130px;width:12px;height:12px;border-radius:3px;animation:arSpark 1s ease-out forwards}
+@keyframes arSpark{to{transform:translate(var(--dx),var(--dy)) rotate(260deg);opacity:0}}
+@media (max-width:760px){
+  .rn-stage{height:260px}.rn-board{--ground:46px}.rn-runner{height:108px;margin-left:-44px}.rn-o.coin{font-size:30px}
+  .rn-o.hurdle{transform-origin:bottom}.rn-main{min-width:200px;min-height:68px;font-size:28px!important}
+  .rn-banner{font-size:34px}.rn-o.friend img{height:110px}.rn-o.ribbon,.rn-o.ribbon img{width:120px}
+}
+@media (prefers-reduced-motion:reduce){.rn-banner.show,.rn-runner.air{}
+.rn-runner.bump{animation-duration:.01s}}
+body.calm .rn-far{display:none}
+/* 시상대 */
+.rn-podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:8px 0}
+.rn-podium div{width:92px;border-radius:14px 14px 0 0;background:#e9dfc8;text-align:center;font-weight:900;padding:6px 0;color:#6b4a1a}
+.rn-podium .me{background:#ffd54f;color:#5a3b00;box-shadow:0 0 0 4px rgba(255,213,79,.4)}

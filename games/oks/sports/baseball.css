@@ -1,0 +1,49 @@
+/* 씽씽별 야구 게임 */
+.bb-board{gap:14px!important;padding:14px!important}
+.bb-stage{position:relative;width:100%;height:360px;border-radius:24px;overflow:hidden;background:#8fd1ff;box-shadow:inset 0 0 0 4px rgba(255,255,255,.8),0 6px 16px rgba(40,60,90,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.bb-stage.shake{animation:bbShake .25s}
+@keyframes bbShake{25%{transform:translate(-3px,2px)}50%{transform:translate(3px,-2px)}75%{transform:translate(-2px,1px)}}
+.bb-sky{position:absolute;inset:0;background:center/cover no-repeat}
+.bb-stage img{position:absolute;display:block;pointer-events:none;user-select:none}
+.bb-ump{left:53%;bottom:7%;height:42%;transform:translateX(-50%);filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
+.bb-catcher{left:44%;bottom:3%;height:40%;transform:translateX(-50%);filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
+.bb-pitcher{left:84%;bottom:44%;height:36%;transform:translateX(-50%);filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
+.bb-batter{left:21%;bottom:-2%;height:80%;transform:translateX(-50%);filter:drop-shadow(0 6px 4px rgba(0,0,0,.28))}
+.bb-zone{left:38%;top:32%;height:48%;transform:translateX(-50%);opacity:.9}
+.bb-ball{--s:.35;width:15%;max-width:64px;min-width:30px;left:0;top:0;transform:translate(-50%,-50%) scale(var(--s));filter:drop-shadow(0 4px 3px rgba(0,0,0,.3));z-index:6}
+.bb-ball[hidden]{display:none}
+.bb-fx{position:absolute;inset:0;pointer-events:none;z-index:7}
+.bb-burst{position:absolute;width:120px;height:auto;margin:-60px 0 0 -60px;animation:bbBurst .7s ease-out forwards}
+@keyframes bbBurst{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}
+.bb-hud{position:absolute;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none;z-index:8;flex-wrap:wrap}
+.bb-hud>span{background:rgba(255,255,255,.94);border-radius:999px;padding:5px 14px;font-weight:900;font-size:18px;color:#5a3b00;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.bb-count{display:flex;align-items:center;gap:4px;font-size:15px!important}
+.bb-count em{font-style:normal;margin:0 2px 0 6px;color:#37507a}
+.bb-count em:first-child{margin-left:0}
+.bb-count i{width:14px;height:14px;border-radius:50%;background:#d9e1ee;box-shadow:inset 0 0 0 2px #fff}
+.bb-count i.b.on{background:#3aa0ff}.bb-count i.s.on{background:#ff5d4d}
+.bb-now{font-size:16px!important;color:#6b4bb7!important}
+.bb-banner{position:absolute;left:50%;top:26%;transform:translate(-50%,-50%) scale(.6);font-size:44px;font-weight:900;color:#fff;-webkit-text-stroke:2px #1f5fd0;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;white-space:nowrap;z-index:9;text-align:center}
+.bb-banner.show{animation:bbBan .3s ease-out forwards}
+@keyframes bbBan{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.bb-dock{min-height:92px;display:flex;align-items:center;justify-content:center;width:100%}
+.bb-main{min-width:260px;min-height:80px;font-size:34px!important;touch-action:manipulation}
+.bb-main.press{transform:translateY(4px) scale(.97)}
+.bb-main.now{animation:bbNow .6s infinite alternate}
+@keyframes bbNow{to{transform:scale(1.06);box-shadow:0 0 0 8px rgba(255,213,79,.55)}}
+.bb-gate{width:100%;display:flex;justify-content:center}
+.bb-gate .oks-card{background:#fff}
+.bb-diamond{position:absolute;inset:0;z-index:5}
+.bb-diamond[hidden]{display:none}
+.bb-dfill{position:absolute;inset:-24px;background:center/cover no-repeat;filter:blur(12px) saturate(1.1)}
+.bb-dwrap{position:absolute;left:50%;top:0;height:100%;aspect-ratio:1672/941;transform:translateX(-50%)}
+.bb-dbg{position:absolute;inset:0;background:center/100% 100% no-repeat}
+.bb-runner{height:32%;width:auto;transform:translate(-50%,-92%);filter:drop-shadow(0 4px 3px rgba(0,0,0,.3))}
+.bb-call{right:6%;bottom:4%;height:44%}
+.bb-call[hidden]{display:none}
+.bb-stage.on-dia .bb-hud{z-index:8}
+@media (max-width:760px){
+  .bb-stage{height:270px}.bb-main{min-width:200px;min-height:68px;font-size:28px!important}.bb-banner{font-size:32px}
+  .bb-hud>span{font-size:15px;padding:4px 10px}.bb-count{font-size:12px!important}.bb-count i{width:11px;height:11px}
+}
+@media (prefers-reduced-motion:reduce){.bb-stage.shake,.bb-main.now{animation:none}}

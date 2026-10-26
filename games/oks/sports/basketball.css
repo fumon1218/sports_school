@@ -1,0 +1,39 @@
+/* 씽씽별 농구 게임 */
+.bk-board{gap:14px!important;padding:14px!important}
+.bk-stage{position:relative;width:100%;height:380px;border-radius:24px;overflow:hidden;background:#8fd1ff;box-shadow:inset 0 0 0 4px rgba(255,255,255,.8),0 6px 16px rgba(40,60,90,.18);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.bk-sky{position:absolute;inset:0;background:center top/cover no-repeat}
+.bk-stage img{position:absolute;display:block;pointer-events:none;user-select:none}
+.bk-cones{position:absolute;inset:0}
+.bk-cone{bottom:7%;height:9%;transform:translateX(-50%);opacity:.75;transition:opacity .2s,transform .2s}
+.bk-cone.on{opacity:1;transform:translateX(-50%) scale(1.15);filter:drop-shadow(0 0 8px #ffd54f)}
+.bk-girl{bottom:2%;height:66%;width:auto;transform:translateX(-50%);transition:left .55s ease;filter:drop-shadow(0 6px 4px rgba(0,0,0,.28));z-index:3}
+.bk-boy{left:60%;bottom:2%;height:46%;transform:translateX(-50%);filter:drop-shadow(0 5px 3px rgba(0,0,0,.25));z-index:2}
+.bk-ball{--s:.9;width:8%;max-width:60px;min-width:30px;left:0;top:0;transform:translate(-50%,-50%) scale(var(--s));filter:drop-shadow(0 4px 3px rgba(0,0,0,.3));z-index:6}
+.bk-ball[hidden]{display:none}
+.bk-fx{position:absolute;inset:0;pointer-events:none;z-index:7}
+.bk-star{position:absolute;font-size:42px;margin:-21px 0 0 -21px;animation:bkStar .8s ease-out forwards}
+@keyframes bkStar{from{transform:scale(.4);opacity:1}to{transform:scale(1.8) translateY(-24px);opacity:0}}
+.bk-hud{position:absolute;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none;z-index:8;flex-wrap:wrap}
+.bk-hud>span{background:rgba(255,255,255,.94);border-radius:999px;padding:5px 14px;font-weight:900;font-size:18px;color:#5a3b00;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.bk-spot:empty{visibility:hidden}.bk-spot{color:#c2571a!important;font-size:16px!important}
+.bk-now{font-size:16px!important;color:#6b4bb7!important}
+.bk-meter{position:absolute;left:50%;bottom:12px;width:56%;height:26px;transform:translateX(-50%);border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 3px 10px rgba(0,0,0,.25),inset 0 0 0 3px #fff;z-index:8;overflow:hidden}
+.bk-meter[hidden]{display:none}
+.bk-zone{position:absolute;top:3px;bottom:3px;border-radius:999px;background:#3ddc6f;box-shadow:0 0 0 2px #1b9c46 inset}
+.bk-meter.now .bk-zone{animation:bkZone .5s infinite alternate}
+@keyframes bkZone{to{filter:brightness(1.25)}}
+.bk-mark{position:absolute;top:0;bottom:0;width:10px;margin-left:-5px;border-radius:5px;background:#ff5d4d;box-shadow:0 0 0 2px #fff}
+.bk-banner{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%) scale(.6);font-size:44px;font-weight:900;color:#fff;-webkit-text-stroke:2px #e0612f;paint-order:stroke fill;text-shadow:0 5px 0 rgba(0,0,0,.18);opacity:0;pointer-events:none;white-space:nowrap;z-index:9;text-align:center}
+.bk-banner.show{animation:bkBan .3s ease-out forwards}
+@keyframes bkBan{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.bk-dock{min-height:92px;display:flex;align-items:center;justify-content:center;width:100%}
+.bk-main{min-width:260px;min-height:80px;font-size:34px!important;touch-action:manipulation}
+.bk-main.now{animation:bkNow .6s infinite alternate}
+@keyframes bkNow{to{transform:scale(1.06);box-shadow:0 0 0 8px rgba(255,213,79,.55)}}
+.bk-gate{width:100%;display:flex;justify-content:center}
+.bk-gate .oks-card{background:#fff}
+@media (max-width:760px){
+  .bk-stage{height:290px}.bk-main{min-width:200px;min-height:68px;font-size:28px!important}.bk-banner{font-size:32px}
+  .bk-hud>span{font-size:15px;padding:4px 10px}.bk-meter{width:70%;height:22px}
+}
+@media (prefers-reduced-motion:reduce){.bk-main.now,.bk-meter.now .bk-zone{animation:none}}

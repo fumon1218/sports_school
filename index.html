@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#cfeaff">
+<title>스포츠 마을</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-mode="title">
+<canvas id="world" aria-label="학교 광장 3D 화면"></canvas>
+
+<!-- 위쪽 안내 -->
+<header id="hud">
+  <div id="guide"><img src="assets/ui/mascot.png" alt="" draggable="false"><p id="guide-text" aria-live="polite"></p></div>
+  <div id="hud-right">
+    <canvas id="minimap" width="300" height="270" aria-label="미니맵"></canvas>
+    <button id="gear" type="button" aria-label="설정">⚙</button>
+  </div>
+</header>
+
+<!-- 조작: 방향 버튼 하나 + 행동 버튼 하나 -->
+<div id="controls">
+  <div id="pad" role="application" aria-label="방향 버튼"><div id="knob"></div><i class="a up">▲</i><i class="a dn">▼</i><i class="a lf">◀</i><i class="a rt">▶</i></div>
+  <button id="act" type="button" data-label=""><span>👣</span><b>안내</b><em id="dwell"></em></button>
+</div>
+
+<!-- 설정 -->
+<section id="settings" hidden>
+  <h2>설정</h2>
+  <label><input type="checkbox" id="opt-easy"> 쉬운 모드 <small>천천히 걷고, 입구에 서 있으면 자동으로 들어가요</small></label>
+  <label><input type="checkbox" id="opt-calm"> 움직임 줄이기</label>
+  <button id="settings-close" type="button">닫기</button>
+</section>
+
+<!-- 시작 화면 -->
+<section id="title">
+  <div class="card">
+    <img src="assets/ui/mascot.png" alt="" draggable="false">
+    <h1 id="title-h"></h1>
+    <p id="title-sub"></p>
+    <label class="chk"><input type="checkbox" id="t-easy"> 쉬운 모드</label>
+    <button id="start" type="button">시작하기</button>
+    <small>컴퓨터는 방향키와 스페이스, 태블릿·휴대폰은 화면 버튼으로 해요.</small>
+  </div>
+</section>
+
+<!-- 체육관 로비 -->
+<section id="lobby" hidden>
+  <div class="lobby-top">
+    <button id="lobby-back" type="button">← 광장으로</button>
+    <h2>체육관</h2>
+    <div class="medals"><span id="medal-row"></span><b id="medal-count"></b></div>
+  </div>
+  <div id="sports" role="list"></div>
+  <p class="lobby-hint">하고 싶은 종목을 눌러요. 틀려도 괜찮아요. 모두 응원해요!</p>
+</section>
+
+<!-- 기존 스포츠 게임 -->
+<section id="game" hidden>
+  <div class="game-top"><button id="game-back" type="button">← 체육관으로</button><b id="game-title"></b></div>
+  <iframe id="game-frame" title="스포츠 체험 게임" allow="autoplay" src="about:blank"></iframe>
+</section>
+
+<div id="toast" role="status"></div>
+<div id="fade"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

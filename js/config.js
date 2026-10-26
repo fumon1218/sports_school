@@ -13,14 +13,15 @@ export const CONFIG = {
 // 종목. open:true 이면 기존 게임에 연결, false 이면 '곧 열려요'.
 // 기존 게임은 games/oks/ (옥쌤의 즐거운 교실 씽씽별 체육) 에서 가져왔습니다.
 const GAME = (sport) => `games/oks/sports/?festival=summer&sport=${sport}&school=elem&lesson=1`;
+const SCH = (id) => `games/school/${id}/?play=1`;
 export const SPORTS = [
-  { id: 'swimming', name: '수영', color: '#4aa3df', open: false, sub: '곧 열려요' },
+  { id: 'swimming', name: '수영', color: '#4aa3df', open: true, url: SCH('swimming'), sub: '물에서 힘차게 나아가요' },
   { id: 'athletics', name: '육상', color: '#ff8b45', open: true, url: GAME('athletics'), sub: '달리고 뛰어요' },
   { id: 'tabletennis', name: '탁구', color: '#f2b705', open: true, url: GAME('tabletennis'), sub: '작은 공을 주고받아요' },
-  { id: 'badminton', name: '배드민턴', color: '#5bbf5a', open: false, sub: '곧 열려요' },
-  { id: 'taekwondo', name: '태권도', color: '#9b7be0', open: false, sub: '곧 열려요' },
+  { id: 'badminton', name: '배드민턴', color: '#5bbf5a', open: true, url: SCH('badminton'), sub: '셔틀콕을 주고받아요' },
+  { id: 'taekwondo', name: '태권도', color: '#9b7be0', open: true, url: SCH('taekwondo'), sub: '발차기로 송판을 격파해요' },
   { id: 'tennis', name: '테니스', color: '#ec6fa0', open: true, url: GAME('tennis'), sub: '공을 라켓으로 쳐요' },
-  { id: 'judo', name: '유도', color: '#4f86e0', open: false, sub: '곧 열려요' },
+  { id: 'judo', name: '유도', color: '#4f86e0', open: true, url: SCH('judo'), sub: '안전하게 넘어지고 일어나요' },
 ];
 
 // 월드 좌표: x는 오른쪽, z는 화면 아래쪽(남쪽). 1 = 약 1m.
@@ -36,7 +37,7 @@ export const GUIDE_POS = { x: 4.5, z: 16 };
 export const BUILDINGS = [
   { id: 'gym', label: '체육관', model: 'gym.glb', size: 18, dim: [1, 0.47, 0.92], x: -30, z: -21, rotY: 0, zone: { kind: 'lobby', x: -30, z: -10.4 } },
   { id: 'teacher', label: '교사동', model: 'teacher.glb', size: 26, dim: [1, 0.42, 0.51], x: 0, z: -23, rotY: 0, soon: true },
-  { id: 'pool', label: '수영장동', model: 'pool.glb', size: 20, dim: [1, 0.28, 0.99], x: 30, z: -18, rotY: 0, soon: true },
+  { id: 'pool', label: '수영장동', model: 'pool.glb', size: 20, dim: [1, 0.28, 0.99], x: 30, z: -18, rotY: 0, zone: { kind: 'game', sport: 'swimming', label: '수영', x: 16.3, z: -20 } },
   { id: 'dorm', label: '생활관', model: 'dorm.glb', size: 22, dim: [1, 0.32, 0.59], x: 32, z: 1, rotY: 0, soon: true },
   { id: 'hall', label: '안내관', model: 'hall.glb', size: 13, dim: [0.76, 0.44, 1], x: 16.5, z: -3.5, rotY: 0, zone: { kind: 'info', x: 9.8, z: -4.6 } },
   { id: 'expo', label: '전시관', model: 'expo.glb', size: 12, dim: [1, 0.28, 0.7], x: -15, z: -10.5, rotY: 0, soon: true },
@@ -49,6 +50,7 @@ export const STATIONS = [
   { id: 'st-tn', sport: 'tennis', label: '테니스', model: 'tennis.glb', size: 12, dim: [0.74, 0.22, 1], x: 12, z: 10, rotY: 0 },
   { id: 'st-at', sport: 'athletics', label: '육상', model: 'hurdles.glb', size: 11, dim: [0.62, 0.26, 1], x: 22, z: 10, rotY: 0 },
   { id: 'st-tk', sport: 'taekwondo', label: '태권도', model: 'boxing.glb', size: 8, dim: [1, 0.52, 0.96], x: 31, z: 11, rotY: 0 },
+  { id: 'st-bd', sport: 'badminton', label: '배드민턴', model: 'badminton.glb', size: 9, dim: [1, 0.2, 0.5], x: 40, z: 22, rotY: 0 },
   { id: 'st-jd', sport: 'judo', label: '유도', model: 'judo.glb', size: 7.5, dim: [1, 0.17, 0.97], x: 40, z: 10.5, rotY: 0 },
 ];
 
@@ -64,7 +66,7 @@ export const DECOR = [
 // 벚나무 (모델 복제)
 export const CHERRY = [[-9, -5], [8, -10], [-10.5, 8], [10, 5], [-34, -8], [36, -10], [42, -5], [-5, -27], [8, -27]];
 // 일반 나무 (임시 도형)
-export const GREEN = [[-42, 22], [-36, 24], [-28, 22], [-20, 24], [-42, 12], [42, 24], [36, 22], [28, 24], [20, 23], [-42, -24], [-42, -2], [42, 10], [42, -26], [14, -27], [-14, -26], [24, 18], [-24, 19], [-17, -14], [20, 8]];
+export const GREEN = [[-42, 22], [-36, 24], [-28, 22], [-20, 24], [-42, 12], [28, 24], [20, 23], [-42, -24], [-42, -2], [42, 10], [42, -26], [14, -27], [-14, -26], [24, 18], [-24, 19], [-17, -14], [20, 8]];
 
 // 정문
 export const GATE = { model: 'gate.glb', size: 20, dim: [1, 0.31, 0.55], x: 0, z: 23, rotY: 0, open: 3.2 };

@@ -15,7 +15,7 @@
   <div id="guide"><p id="guide-text" aria-live="polite"></p></div>
   <div id="hud-right">
     <canvas id="minimap" width="300" height="200" aria-label="미니맵"></canvas>
-    <button id="gear" type="button" aria-label="설정">⚙</button>
+    <div class="hud-btns"><button id="home" type="button" aria-label="처음 화면으로">🏠</button><button id="gear" type="button" aria-label="설정">⚙</button></div>
   </div>
 </header>
 
@@ -35,19 +35,25 @@
 
 <!-- 시작 화면 -->
 <section id="title">
-  <div class="card">
-    <h1 id="title-h"></h1>
-    <p id="title-sub"></p>
-    <div class="avatars" role="group" aria-label="캐릭터 고르기">
-      <button type="button" class="avatar" data-k="boy"><span>🧒</span>소년</button>
-      <button type="button" class="avatar" data-k="wheelchair"><span>♿</span>휠체어 선수</button>
-      <button type="button" class="avatar" data-k="girl"><span>👧</span>여학생</button>
-      <button type="button" class="avatar" data-k="girl_wheelchair"><span>♿</span>휠체어 여학생</button>
+  <div class="t-wrap">
+    <div class="t-brand">
+      <span class="t-chip">체육 중점 스포츠 마을</span>
+      <h1 id="title-h"></h1>
+      <p id="title-sub"></p>
+      <div class="t-icons" aria-hidden="true"><img src="assets/ui/icon_swimming.webp" alt=""><img src="assets/ui/icon_athletics.webp" alt=""><img src="assets/ui/icon_tabletennis.webp" alt=""><img src="assets/ui/icon_badminton.webp" alt=""><img src="assets/ui/icon_taekwondo.webp" alt=""><img src="assets/ui/icon_tennis.webp" alt=""><img src="assets/ui/icon_judo.webp" alt=""></div>
     </div>
-    <button type="button" id="open-info" class="ghost">학교 소개 보기</button>
-    <label class="chk"><input type="checkbox" id="t-easy"> 쉬운 모드</label>
-    <button id="start" type="button">시작하기</button>
-    <small>컴퓨터는 방향키와 스페이스, 태블릿·휴대폰은 화면 버튼으로 해요.</small>
+    <div class="t-panel">
+      <div class="t-label">함께 걸을 친구를 골라요</div>
+      <div class="avatars" role="group" aria-label="캐릭터 고르기">
+        <button type="button" class="avatar" data-k="boy"><img src="assets/ui/av_boy.webp" alt=""><b>남학생</b></button>
+        <button type="button" class="avatar" data-k="girl"><img src="assets/ui/av_girl.webp" alt=""><b>여학생</b></button>
+        <button type="button" class="avatar" data-k="squirrel"><img src="assets/ui/av_squirrel.webp" alt=""><b>다람쥐</b></button>
+      </div>
+      <label class="t-toggle"><input type="checkbox" id="t-easy"><span><b>쉬운 모드</b><small>천천히 걷고, 입구에 서 있으면 자동으로 들어가요</small></span></label>
+      <button id="start" type="button">시작하기 <i>▶</i></button>
+      <button type="button" id="open-info" class="ghost">학교 소개 보기</button>
+      <small class="t-help">컴퓨터는 방향키와 스페이스, 태블릿·휴대폰은 화면 버튼으로 해요.</small>
+    </div>
   </div>
 </section>
 
@@ -56,7 +62,7 @@
   <div class="lobby-top">
     <button id="lobby-back" type="button">← 광장으로</button>
     <h2>체육관 로비</h2>
-    <div class="medals"><span id="medal-row"></span><b id="medal-count"></b></div>
+    <button type="button" class="home-btn" data-home>🏠 처음으로</button><div class="medals"><span id="medal-row"></span><b id="medal-count"></b></div>
   </div>
   <div id="sports" role="list"></div>
   <p class="lobby-hint">하고 싶은 종목을 눌러요. 틀려도 괜찮아요. 모두 응원해요!</p>
@@ -65,7 +71,7 @@
 <!-- 안내관: 학교 소개 · 육성 종목 · 입학 안내 -->
 <section id="info" hidden>
   <div class="info-card">
-    <div class="info-top"><h2 id="info-title"></h2><button id="info-close" type="button">닫기 ✕</button></div>
+    <div class="info-top"><h2 id="info-title"></h2><button type="button" class="home-btn" data-home>🏠 처음으로</button><button id="info-close" type="button">닫기 ✕</button></div>
     <div class="tabs" role="tablist"><button type="button" data-t="about" class="on">학교 소개</button><button type="button" data-t="sports">육성 종목</button><button type="button" data-t="admission">입학 안내</button></div>
     <div id="info-body"></div>
   </div>
@@ -73,7 +79,7 @@
 
 <!-- 기존 스포츠 게임 -->
 <section id="game" hidden>
-  <div class="game-top"><button id="game-back" type="button">← 체육관으로</button><b id="game-title"></b></div>
+  <div class="game-top"><button id="game-back" type="button">← 체육관으로</button><b id="game-title"></b><button type="button" class="home-btn" data-home>🏠 처음으로</button></div>
   <iframe id="game-frame" title="스포츠 체험 게임" allow="autoplay" src="about:blank"></iframe>
 </section>
 

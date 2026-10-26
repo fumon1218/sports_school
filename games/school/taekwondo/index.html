@@ -1,0 +1,51 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>태권도 격파</title><link rel="stylesheet" href="../kit.css"></head><body><script src="../kit.js"></script><script>
+// 태권도: 사범님이 송판을 들어 주면, 신호가 작아질 때 버튼을 눌러 발차기로 격파! 놓쳐도 괜찮아요. 겨루기 없이 격파만 해요.
+const K = Kit, GOAL = K.easy ? 6 : 10, RING = K.easy ? 2.2 : 1.5, WIN = K.easy ? 0.5 : 0.28;
+let n, hits, perfect, padT, padH, kick, kickH, playing, bowT, state, msgT, boards = 1, pieces = [], brokeT = 0;
+const HEIGHTS = [1.15, 0.55, 1.75, 1.15, 0.55, 1.75]; // 미트 높이(몸 크기 배수)
+function next() { padH = HEIGHTS[(n) % HEIGHTS.length]; boards = Math.min(3, 1 + Math.floor(n / 2)); pieces = []; brokeT = 0; padT = 0; state = 'pad'; }
+function reset() { n = 0; hits = 0; perfect = 0; kick = 0; playing = true; bowT = 1.2; state = 'bow'; K.say('차렷! 경례!'); K.label('발차기!'); }
+K.onPress(() => {
+  if (!playing || state === 'bow') return;
+  if (state === 'pad') {
+    const left = RING - padT, ok = left < WIN, good = left < WIN * 0.55; kick = 1; kickH = padH; state = 'kick';
+    hits++; n++; if (good) { perfect++; K.say('쾅! 격파 성공! 최고예요!'); } else if (ok) K.say('좋아요! 격파!'); else K.say('힘찬 발차기! 격파!');
+    K.good(); setTimeout(() => { const bx = K.W * 0.34 + Math.min(K.W, K.H) * 0.2 * 1.12, by = K.H * 0.72 - padH * Math.min(K.H, K.W) * 0.19; K.burst(bx, by, '#e9b873', 18); K.burst(bx, by, '#fff', 8); K.beep(160, 0.18, 'square', 0.14); brokeT = 0.001; pieces = []; for (let i = 0; i < boards * 2; i++) pieces.push({ x: bx, y: by, vx: (i % 2 ? 1 : -1) * (90 + Math.random() * 120), vy: -160 - Math.random() * 120, r: 0, vr: (i % 2 ? 1 : -1) * (4 + Math.random() * 4), lay: (i >> 1) }); }, 140);
+    setTimeout(() => { if (hits >= GOAL) { playing = false; K.say('경례!'); const r = perfect / hits; setTimeout(() => K.finish('멋진 태권도! 참 잘했어요', `${GOAL}번 힘차게 차 냈어요!`, r > 0.5 ? 3 : r > 0.2 ? 2 : 1, reset), 900); } else next(); }, 950);
+  }
+});
+function update(dt) {
+  if (!playing) return; K.hud(`발차기 ${hits} / ${GOAL}`);
+  if (state === 'bow') { bowT -= dt; if (bowT <= 0) { K.say('송판을 향해 발차기!'); next(); } return; }
+  kick = Math.max(0, kick - dt * 1.5); if (brokeT > 0) { brokeT += dt; for (const p of pieces) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 900 * dt; p.r += p.vr * dt; } }
+  if (state === 'pad') { padT += dt; if (padT > RING * 1.6) { padT = 0; K.say('괜찮아요, 천천히 다시!'); K.soft(); } }
+}
+function draw(c, W, H) {
+  const gy = H * 0.72, s = Math.min(H, W) * 0.2; K.sky(gy, '#ffe9c4', '#fff6e6');
+  c.fillStyle = '#f7e3bd'; c.fillRect(0, H * 0.12, W, gy - H * 0.12); c.fillStyle = '#d9b777'; for (let x = 0; x < W; x += 120) c.fillRect(x, H * 0.12, 4, gy - H * 0.12);
+  // 태극 모양 벽 장식
+  const cx = W / 2, cy = H * 0.3, R = Math.min(H, W) * 0.12; c.save(); c.translate(cx, cy); K.circle(0, 0, R + 10, '#fff'); c.fillStyle = '#e14b4b'; c.beginPath(); c.arc(0, 0, R, Math.PI, 0); c.fill(); c.fillStyle = '#3a6fe0'; c.beginPath(); c.arc(0, 0, R, 0, Math.PI); c.fill(); K.circle(-R / 2, 0, R / 2, '#e14b4b'); K.circle(R / 2, 0, R / 2, '#3a6fe0'); c.restore();
+  // 매트
+  c.fillStyle = '#3d8be0'; c.fillRect(0, gy, W, H - gy); c.fillStyle = '#e14b4b'; c.fillRect(0, gy, W, 10);
+  for (let x = 0; x < W; x += 140) { c.strokeStyle = '#ffffff55'; c.lineWidth = 3; c.beginPath(); c.moveTo(x, gy + 10); c.lineTo(x - 40, H); c.stroke(); }
+  // 사범님 + 미트
+  const px = W * 0.34, ox = W * 0.74, ph = padH || 1.15;
+  K.person(ox, gy + 20, s, { gi: '#fff', pants: '#fff', belt: '#222', face: -1, aU: [-1.2, -1.2], aF: [-1.5, -1.5], hair: '#222', lU: [0.1, -0.1], lF: [0.1, -0.1] });
+  const mx = px + s * 1.12, my = gy - ph * s * 0.95;
+  const bh = s * 0.9, bw = 16;
+  const plank = (x, y, w, h, tone) => { K.rr(x, y, w, h, 3, tone, '#8a5a2b'); c.strokeStyle = '#a9743a'; c.lineWidth = 1.5; for (let g = 1; g < 4; g++) { c.beginPath(); c.moveTo(x + w * g / 4, y + 3); c.lineTo(x + w * g / 4, y + h - 3); c.stroke(); } };
+  if (state !== 'bow') {
+    if (brokeT <= 0) { c.save(); c.translate(mx, my); const sh = state === 'kick' ? Math.sin(K.t * 60) * 3 : 0; c.translate(sh, 0); for (let i = 0; i < boards; i++) plank(-bw / 2 + i * 10 - (boards - 1) * 5, -bh / 2, bw, bh, ['#e8c288', '#e0b676', '#d8aa68'][i]); K.rr(14, -8, 26, 16, 8, '#f2c29b'); c.restore(); }
+    else for (const p of pieces) { c.save(); c.translate(p.x, p.y); c.rotate(p.r); plank(-bw / 2 - 4, -bh / 4, bw, bh / 2, '#e0b676'); c.restore(); }
+  }
+  // 나 (흰 도복, 검은 띠)
+  const bow = state === 'bow' ? Math.sin(Math.min(1, (1.2 - bowT) / 0.6) * Math.PI) * 0.35 : 0;
+  let o = { gi: '#fff', pants: '#fff', belt: '#222', lean: bow, aU: [0.5, -0.3], aF: [0.9, -0.5], lU: [0.15, -0.35], lF: [0.15, -0.1], hair: '#3a2a22' };
+  if (kick > 0 || state === 'kick') { const k = Math.sin(Math.min(1, 1 - kick) * Math.PI); const a = K.lerp(0.2, 0.55 + ph * 0.9, k); o = Object.assign(o, { lU: [a, -0.3], lF: [a + 0.05, -0.1], lean: -0.1 * k, aU: [0.2, -0.5], aF: [0.6, -0.9] }); }
+  K.person(px, gy + 20, s, o);
+  if (state === 'pad') K.ring(mx - 4, my, 36, (RING - padT) / RING * 0.9, RING - padT < WIN ? '#25b455' : '#ff7a2f');
+  K.drawParticles(1 / 60);
+}
+K.start('🥋 태권도 격파', '사범님이 송판을 들어요.<br>둥근 신호가 작아질 때<br>큰 버튼을 눌러 발차기로 격파!<br>겨루기 없이 격파만 해요.', reset);
+K.run(update, draw);
+</script></body></html>

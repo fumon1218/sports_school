@@ -1,0 +1,49 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>배드민턴</title><link rel="stylesheet" href="../kit.css"></head><body><script src="../kit.js"></script><script>
+// 배드민턴: 셔틀콕이 내려올 때 신호가 켜지면 버튼을 눌러 받아쳐요. 놓쳐도 다시 서브해 줘요.
+const K = Kit, GOAL = K.easy ? 5 : 10, FLY = K.easy ? 2.4 : 1.7, WIN = K.easy ? 0.55 : 0.3;
+let rally, side, u, from, to, hitT, misses, swing, msg, playing, serveWait, shake;
+function serve() { side = 'toPlayer'; u = 0; serveWait = 0.7; swing = 0; }
+function reset() { rally = 0; misses = 0; playing = true; serve(); K.say('셔틀콕이 오면 신호에 맞춰 눌러요!'); K.label('받아쳐요!'); }
+K.onPress(() => {
+  if (!playing) return; swing = 1;
+  if (side === 'toPlayer' && u > 0.6) { const left = (1 - u) * FLY; if (left < WIN) { hit(); return; } }
+  K.soft();
+});
+function hit() { rally++; misses = 0; side = 'toOpp'; u = 0; K.good(); K.say(['좋은 타구!', '멋져요!', '잘 받았어요!'][rally % 3]); K.burst(K.W * 0.22, K.H * 0.55, '#ffd24a', 10); if (rally >= GOAL) { playing = false; K.say(''); setTimeout(() => K.finish('랠리 성공! 참 잘했어요', `${GOAL}번 주고받았어요!`, K.easy ? 3 : 3, reset), 600); } }
+function update(dt) {
+  if (!playing) return; swing = Math.max(0, swing - dt * 4); K.hud(`랠리 ${rally} / ${GOAL}`);
+  if (serveWait > 0) { serveWait -= dt; return; }
+  u += dt / FLY * (side === 'toOpp' ? 1.15 : 1);
+  if (u >= 1) {
+    if (side === 'toOpp') { side = 'toPlayer'; u = 0; serveWait = 0.3; }
+    else { misses++; K.say('괜찮아요, 다시 한 번!'); K.soft(); serve(); if (misses >= 3) { misses = 0; setTimeout(() => { if (playing && side === 'toPlayer' && u < 0.9) { u = 0.99; hit(); } }, 2200); } }
+  }
+}
+function draw(c, W, H) {
+  const gy = H * 0.72; K.sky(gy, '#9fdcff', '#f1fbff');
+  // 체육관 벽
+  c.fillStyle = '#ffe7b8'; c.fillRect(0, gy * 0.35, W, gy * 0.65); c.fillStyle = '#ffd08a'; for (let x = 0; x < W; x += 90) c.fillRect(x, gy * 0.35, 6, gy * 0.65);
+  for (let k = 0; k < 4; k++) K.rr(W * (0.12 + k * 0.22), gy * 0.4, W * 0.14, gy * 0.22, 10, '#cfeaff');
+  c.fillStyle = '#e9a45b'; c.fillRect(0, gy, W, H - gy); c.strokeStyle = '#fff'; c.lineWidth = 5; c.beginPath(); c.moveTo(W * 0.04, gy + 24); c.lineTo(W * 0.96, gy + 24); c.moveTo(W * 0.04, H - 12); c.lineTo(W * 0.96, H - 12); c.stroke();
+  // 네트
+  const nx = W / 2, nh = H * 0.22; c.fillStyle = '#233a6b'; c.fillRect(nx - 4, gy - nh, 8, nh + 24); c.fillStyle = '#ffffffcc'; c.fillRect(nx - 3, gy - nh, 6, 8);
+  c.strokeStyle = '#ffffffaa'; c.lineWidth = 2; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(nx - 26, gy - nh + 10 + i * 12); c.lineTo(nx + 26, gy - nh + 10 + i * 12); c.stroke(); }
+  // 선수들
+  const px = W * 0.2, ox = W * 0.8, s = Math.min(H, W) * 0.2;
+  const swingA = swing > 0 ? -1.2 + (1 - swing) * 2.8 : 0.35;
+  K.person(px, gy + 14, s, { gi: '#ff6b6b', pants: '#2c3e70', belt: '#2c3e70', aU: [0.4, swingA], aF: [0.2, swingA * 0.8], lU: [0.1, -0.15], lF: [0.1, -0.1], cap: null });
+  c.save(); c.translate(px + s * 0.4 + Math.sin(swingA) * s * 0.9, gy - s * 1.25 + Math.cos(swingA) * s * 0.9); c.rotate(swingA - 0.4); c.strokeStyle = '#444'; c.lineWidth = 5; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -s * 0.5); c.stroke(); c.strokeStyle = '#25b455'; c.lineWidth = 4; c.beginPath(); c.ellipse(0, -s * 0.72, s * 0.15, s * 0.22, 0, 0, 7); c.stroke(); c.restore();
+  K.text('🐿️', ox, gy - s * 0.7, s * 1.2);
+  K.rr(ox - s * 0.45, gy - s * 0.2, s * 0.9, s * 0.35, 12, '#ffd24a'); 
+  // 셔틀콕
+  if (serveWait <= 0 || side === 'toOpp') {
+    const hp = { x: px + s * 0.5, y: gy - s * 1.1 }, op = { x: ox - s * 0.5, y: gy - s * 1.0 }, a = side === 'toOpp' ? hp : op, b = side === 'toOpp' ? op : hp;
+    const x = K.lerp(a.x, b.x, u), y = K.lerp(a.y, b.y, u) - Math.sin(u * Math.PI) * H * 0.34; const ang = Math.atan2(-Math.cos(u * Math.PI) * H * 0.34 * Math.PI + (b.y - a.y), (b.x - a.x));
+    c.save(); c.translate(x, y); c.rotate(ang + Math.PI / 2 * (side === 'toOpp' ? 1 : -1) * 0 + Math.PI); K.circle(0, 0, 9, '#fff'); c.fillStyle = '#fff'; c.strokeStyle = '#9ab'; c.lineWidth = 2; c.beginPath(); c.moveTo(-4, -6); c.lineTo(-17, -30); c.lineTo(17, -30); c.lineTo(4, -6); c.closePath(); c.fill(); c.stroke(); c.restore();
+    if (side === 'toPlayer') { const left = (1 - u) * FLY; if (left < WIN * 2.4) K.ring(px + s * 0.55, gy - s * 1.2, 34, left / (WIN * 2.4), left < WIN ? '#25b455' : '#ff7a2f'); }
+  } else K.text('🏸', ox - s * 0.6, gy - s * 1.3, 36);
+  K.drawParticles(1 / 60);
+}
+K.start('🏸 배드민턴', '셔틀콕이 내려올 때 둥근 신호가<br>작아지면 큰 버튼을 눌러 받아쳐요.<br>놓쳐도 괜찮아요!', reset);
+K.run(update, draw);
+</script></body></html>

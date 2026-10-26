@@ -10,13 +10,13 @@ const store = {
   set(k, v) { try { localStorage.setItem('ssw_' + k, JSON.stringify(v)); } catch (e) { /* 저장이 안 되어도 계속 진행 */ } },
 };
 const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const settings = { easy: store.get('easy', true), calm: store.get('calm', prefersReduced), avatar: store.get('avatar', 'boy') };
+const settings = { easy: store.get('easy', true), calm: store.get('calm', prefersReduced), avatar: ['boy', 'girl', 'squirrel'].includes(store.get('avatar', 'boy')) ? store.get('avatar', 'boy') : 'boy' };
 const medals = store.get('medals', {});
 const flags = store.get('flags', {});
 const sportById = Object.fromEntries(SPORTS.map((s) => [s.id, s]));
 
 document.title = CONFIG.title;
-$('#title-h').textContent = CONFIG.title;
+{ const mt = CONFIG.title.match(/^(.+?대학교)(.+)$/); const th = $('#title-h'); if (mt) { th.innerHTML = ''; for (const part of [mt[1], mt[2]]) { const s = document.createElement('span'); s.textContent = part; th.appendChild(s); } } else th.textContent = CONFIG.title; }
 $('#title-sub').textContent = CONFIG.subtitle;
 
 /* ---------- three 기본 ---------- */
@@ -68,6 +68,15 @@ function place(cfg, fallbackFn) {
   return holder;
 }
 const footprint = (c) => { const swap = Math.abs((c.rotY || 0) % 180) === 90; const w = c.size * c.dim[0], d = c.size * c.dim[2]; return { w: swap ? d : w, d: swap ? w : d, h: c.size * c.dim[1] }; };
+const courtFallback = (c) => {
+  const f = footprint(c), g = new THREE.Group(), w = f.w, d = f.d;
+  { const fl = P.box(w, 0.2, d, P.mat(0x3f9f6e)); fl.position.set(0, 0.1, 0); g.add(fl); }
+  const line = (lw, ld, x, z) => { const b = P.box(lw, 0.04, ld, P.mat(0xffffff)); b.position.set(x, 0.22, z); g.add(b); };
+  line(w * 0.92, 0.12, 0, d * 0.45); line(w * 0.92, 0.12, 0, -d * 0.45); line(0.12, d * 0.9, w * 0.45, 0); line(0.12, d * 0.9, -w * 0.45, 0); line(0.1, d * 0.9, 0, 0);
+  for (const s of [-1, 1]) { const p = P.box(0.18, 1.6, 0.18, P.mat(0x233a6b)); p.position.set(0, 0.9, s * d * 0.5); g.add(p); }
+  const net = P.box(0.06, 0.9, d, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 })); net.position.set(0, 1.2, 0); g.add(net);
+  return g;
+};
 const blockFallback = (c) => { const f = footprint(c); return P.buildBlock({ w: f.w, d: f.d, h: Math.max(f.h, 2), color: c.color || 0xe3e6ee }); };
 
 /* ---------- 충돌 ---------- */
@@ -103,7 +112,7 @@ BUILDINGS.forEach((b) => {
   const f = footprint(b);
   addBox(b.x, b.z, f.w * 0.94, f.d * 0.94, { id: b.id, label: b.label, locked: !!b.soon });
   addLabel(b.label, b.x, f.h + 2.4, b.z + f.d * 0.12);
-  if (b.zone) zones.push({ id: b.id, kind: b.zone.kind, x: b.zone.x, z: b.zone.z, r: 2.4, label: b.label, open: true, tip: { x: b.zone.x, y: Math.max(f.h * 0.5, 5.5), z: b.zone.z } });
+  if (b.zone) zones.push({ id: b.id, kind: b.zone.kind, sport: b.zone.sport, x: b.zone.x, z: b.zone.z, r: 2.4, label: b.zone.label || b.label, open: true, tip: { x: b.zone.x, y: Math.max(f.h * 0.5, 5.5), z: b.zone.z } });
 });
 
 // 정문
@@ -119,7 +128,7 @@ BUILDINGS.forEach((b) => {
 /* ---------- 체험 구역 ---------- */
 const ringMats = [];
 STATIONS.forEach((st) => {
-  place(st, blockFallback);
+  place(st, st.sport === 'badminton' ? courtFallback : blockFallback);
   const f = footprint(st);
   addBox(st.x, st.z, f.w * 0.9, f.d * 0.9);
   const sp = sportById[st.sport]; const open = !!sp.open;
@@ -195,8 +204,9 @@ loadModel('pin.glb').then((src) => { if (!src) return; pinHolder.remove(pinFallb
 
 /* ---------- 주인공, 친구, 안내원 ---------- */
 const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelchair: { model: 'wheelchair.glb', size: 2.2, name: '휠체어 선수' },
-  girl: { model: 'girl.glb', size: 2.3, name: '여학생' }, girl_wheelchair: { model: 'girl_wheelchair.glb', size: 2.2, name: '휠체어 여학생' } };
-const PARTNER = { boy: 'wheelchair', wheelchair: 'boy', girl: 'girl_wheelchair', girl_wheelchair: 'girl' };
+  girl: { model: 'girl.glb', size: 2.3, name: '여학생' }, girl_wheelchair: { model: 'girl_wheelchair.glb', size: 2.2, name: '휠체어 여학생' },
+  squirrel: { model: 'mascot.glb', size: 2.7, name: '다람쥐', hop: true } };
+const PARTNER = { boy: 'wheelchair', wheelchair: 'boy', girl: 'girl_wheelchair', girl_wheelchair: 'girl', squirrel: 'girl' };
 const player = new THREE.Group(); player.position.set(PLAYER_START.x, 0, PLAYER_START.z); scene.add(player);
 const playerBody = new THREE.Group(); player.add(playerBody);
 const npc = new THREE.Group(); npc.position.set(-3, 0, 16); scene.add(npc);
@@ -206,7 +216,7 @@ function setAvatar(key) {
   playerBody.clear(); npc.clear(); playerRig = null; npcRig = null;
   const other = PARTNER[key] || 'boy';
   const fb = P.buildPlayer(); playerBody.add(fb);
-  loadModel(AVATARS[key].model).then((src) => { if (!src) return; playerBody.remove(fb); const m = fitModel(src, AVATARS[key].size); playerBody.add(m); playerRig = autoRig(m, key); });
+  loadModel(AVATARS[key].model).then((src) => { if (!src) return; playerBody.remove(fb); const m = fitModel(src, AVATARS[key].size); playerBody.add(m); playerRig = AVATARS[key].hop ? null : autoRig(m, key); });
   loadModel(AVATARS[other].model).then((src) => { if (!src) return; const m = fitModel(src, AVATARS[other].size); npc.add(m); npcRig = autoRig(m, other); });
 }
 
@@ -447,10 +457,10 @@ function openGame(s, from) {
   $('#game-title').innerHTML = `<img src="assets/ui/icon_${s.id}.webp" alt=""> ${s.name}`;
   $('#game-back').textContent = from === 'world' ? '← 마을로' : '← 체육관으로';
   $('#lobby').hidden = true; $('#game').hidden = false; setMode('game');
-  frame.src = `${s.url}&level=${lv}&play=1`;
+  frame.src = `${s.url}${s.url.includes('?') ? '&' : '?'}level=${lv}&play=1`;
 }
 frame.addEventListener('load', () => {
-  clearInterval(autoStart); let n = 0, started = false; // 수업용 안내를 건너뛰고 바로 시작
+  clearInterval(autoStart); if (!frame.src.includes('games/oks')) return; let n = 0, started = false; // 수업용 안내를 건너뛰고 바로 시작
   autoStart = setInterval(() => {
     n++; if (n > 40) return clearInterval(autoStart);
     try {
@@ -480,6 +490,12 @@ $('#game-back').addEventListener('click', closeGame);
 
 /* ---------- 설정, 시작 ---------- */
 const setPanel = $('#settings');
+function goHome() {
+  cancelAuto(); vel.set(0, 0, 0); joy.x = joy.y = 0; clearInterval(autoStart);
+  transition(() => { frame.src = 'about:blank'; for (const id of ['lobby', 'game', 'info', 'settings']) { const e = document.getElementById(id); if (e) e.hidden = true; } $('#title').hidden = false; setMode('title'); });
+}
+document.querySelectorAll('[data-home]').forEach((b) => b.addEventListener('click', goHome));
+$('#home').addEventListener('click', goHome);
 $('#gear').addEventListener('click', () => { setPanel.hidden = !setPanel.hidden; });
 $('#opt-easy').checked = settings.easy; $('#opt-calm').checked = settings.calm;
 $('#opt-easy').addEventListener('change', (e) => { settings.easy = e.target.checked; store.set('easy', settings.easy); });
@@ -564,7 +580,7 @@ function frameLoop() {
     updateCrowd(dt); updateMascot(t, dt);
     if (playerRig) playerRig.update(dt, settings.calm ? 0 : sp, AVATARS[settings.avatar].size);
     if (npcRig) npcRig.update(dt, 0);
-    if (sp > 0.3 && !settings.calm) { walkT += dt * sp * 1.4; playerBody.position.y = Math.abs(Math.sin(walkT)) * 0.09; playerBody.rotation.z = Math.sin(walkT) * 0.05; } else { playerBody.position.y *= 0.8; playerBody.rotation.z *= 0.8; }
+    if (sp > 0.3 && !settings.calm) { walkT += dt * sp * 1.4; const hop = AVATARS[settings.avatar].hop ? 2.6 : 1; playerBody.position.y = Math.abs(Math.sin(walkT * (hop > 1 ? 1.5 : 1))) * 0.09 * hop; playerBody.rotation.z = Math.sin(walkT) * 0.05 * hop; } else { playerBody.position.y *= 0.8; playerBody.rotation.z *= 0.8; }
 
     // 주변 확인
     const zn = zoneNear(p.x, p.z);
@@ -594,7 +610,10 @@ function frameLoop() {
   // 카메라: 고정 각도로 따라감
   const portrait = camera.aspect < 0.85; const dist = portrait ? 1.7 : 1.0;
   if (topDown) { camera.position.set(0, 120, 8); camera.up.set(0, 0, -1); camera.lookAt(0, 0, 4); scene.fog = null; }
-  else {
+  else if (mode === 'title') {
+    const a = t * 0.05 + 0.6, R = portrait ? 105 : 78;
+    camPos.set(Math.sin(a) * R, portrait ? 52 : 40, Math.cos(a) * R * 0.8 - 6); camInit = true; camera.position.copy(camPos); camera.lookAt(0, 0, -4);
+  } else {
     tmp.set(player.position.x, 0, player.position.z).add(new THREE.Vector3(0, 17 * dist, 15.5 * dist));
     if (!camInit) { camPos.copy(tmp); camInit = true; }
     camPos.lerp(tmp, 1 - Math.exp(-(calm ? 20 : 5) * dt)); camera.position.copy(camPos);

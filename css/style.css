@@ -193,4 +193,30 @@ body[data-mode="world"] #treasure-bar{display:flex}
 #treasure-bar span{width:1.35em;height:1.5em;line-height:1.5em;text-align:center;font-weight:800;font-size:15px;color:#b8c4d6;border-radius:6px;background:#eef2f8}
 #treasure-bar span.on{color:#7a4a00;background:linear-gradient(#ffe27a,#f2b705)}
 #treasure-bar.done{box-shadow:0 0 18px 4px #ffd24acc}
-@media (max-width:700px){#treasure-bar{max-width:calc(100vw - 210px);bottom:max(86px,env(safe-area-inset-bottom));left:50%}#treasure-bar span{font-size:13px}}
+@media (max-width:700px){#treasure-bar{max-width:calc(100vw - 210px);bottom:max(86px,env(safe-area-inset-bottom));left:50%}@media (orientation:portrait){#treasure-bar{max-width:calc(100vw - 28px);bottom:max(176px,calc(env(safe-area-inset-bottom) + 164px))}}#treasure-bar span{font-size:13px}}
+
+/* ---- 휴대폰 가로 화면: 게임 위쪽 줄을 얇게 ---- */
+@media (max-height:480px){
+  .game-top{gap:8px;padding:max(2px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 3px max(10px,env(safe-area-inset-left))}
+  #lobby-back,#game-back,.game-top .home-btn{padding:3px 10px;border-width:2px;border-radius:12px;font-size:14px;box-shadow:0 2px 5px #0003}
+  .game-top b{font-size:15px;gap:6px}.game-top b img{width:22px;height:22px}
+}
+
+/* ---- 휴대폰 가로 화면(낮은 화면): 시작 화면·체육관 로비·조이스틱을 작게 ---- */
+#title{overflow-y:auto}
+@media (max-height:480px) and (orientation:landscape){
+  .t-wrap{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-content:center;align-items:center}
+  .t-icons,.t-help,.t-toggle small{display:none}
+  .t-chip{padding:3px 10px;font-size:11px}
+  #title h1{font-size:clamp(20px,7vh,30px);margin:6px 0 4px}#title-sub{font-size:12px;margin:0 0 4px}
+  .t-panel{padding:10px 12px;border-radius:20px}.t-label{font-size:13px;margin:0 0 6px}
+  .avatars{gap:6px;margin:0 0 8px}.avatar{padding:3px 2px 4px;border-radius:14px;border-width:2px}.avatar img{height:clamp(40px,15vh,64px)}.avatar b{font-size:10.5px}
+  .avatar.on::after{width:18px;height:18px;font-size:11px}
+  .t-toggle{padding:5px 10px;margin:0 0 8px;gap:8px;border-radius:14px}.t-toggle b{font-size:13px}.t-toggle input{width:20px;height:20px}
+  #start{padding:8px;font-size:18px;border-radius:14px;box-shadow:0 4px 0 #168a3a}
+  #pad{width:112px;border-width:4px}
+  .lobby-top{gap:8px;flex-wrap:nowrap}#lobby-back,.lobby-top .home-btn,.game-top button{white-space:nowrap}.lobby-top h2{font-size:18px;white-space:nowrap}
+  #sports{grid-template-columns:repeat(4,1fr);gap:8px;margin:6px auto;align-content:start}
+  .sport{border-width:3px;border-radius:16px;padding:4px 4px 6px;box-shadow:0 3px 0 var(--c),0 5px 10px #0003}.sport>img{width:min(100%,clamp(36px,15vh,60px))}.sport b{font-size:14px}.sport small{display:none}
+  .lobby-hint{padding:4px 12px;font-size:12px;border-radius:12px}
+}

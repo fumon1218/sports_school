@@ -30,7 +30,7 @@ function draw(c, W, H) {
   // 도착 벽
   const toGoal = GOAL - dist; if (toGoal < 12) { const wx = W * 0.5 + toGoal * 130; K.rr(wx, wl - 20, 120, H, 0, '#f6f1e7'); K.rr(wx, wl + 20, 14, H, 0, '#2a79b8'); K.text('도착!', wx + 60, wl + 90, 34, '#d84b2a'); }
   // 헤엄치는 아이: 새로 만든 자유형 그림(팔 위치 두 가지)을 번갈아 보여줘요
-  const sx = W * 0.4, sy = wl + 92 + Math.sin(wob) * 5, a = stroke, ph = 'swim_' + (1 + ((Math.floor(swimF) % 4) + 4) % 4), sh = Math.min(H, W) * 0.34;
+  const sx = W * 0.4, sy = wl + Math.min(92, H * 0.2) + Math.sin(wob) * 5, a = stroke, ph = 'swim_' + (1 + ((Math.floor(swimF) % 4) + 4) % 4), sh = Math.min(H, W) * 0.34;
   swimF += (K.t - lastT) * (2.4 + 5 * Math.min(1, a || 0)); lastT = K.t;
   K.spr(ph, sx, sy + sh * 0.4, sh, { rot: Math.sin(wob) * 0.02, shadow: false, px: 0.5 });
   // 몸 아래쪽은 물 속에 잠겨 보여요

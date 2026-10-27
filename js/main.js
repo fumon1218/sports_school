@@ -640,6 +640,7 @@ function openGame(s, from) {
   $('#game-back').textContent = from === 'world' ? '← 마을로' : '← 체육관으로';
   $('#lobby').hidden = true; $('#game').hidden = false; setMode('game');
   frame.src = `${s.url}${s.url.includes('?') ? '&' : '?'}level=${lv}&play=1`;
+  if (innerHeight < 460 && innerWidth > innerHeight && s.url.includes('games/oks')) showToast('📱 화면을 세로로 돌리면 더 크게 보여요!');
 }
 frame.addEventListener('load', () => {
   clearInterval(autoStart); if (!frame.src.includes('games/oks')) return; let n = 0, started = false; // 수업용 안내를 건너뛰고 바로 시작

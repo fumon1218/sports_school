@@ -149,12 +149,9 @@ export function autoRig(group, kind) {
         }
         bones.hips.position.y = bones.hips.userData.rest.y - dropY * sit;
       } else {
-        wheel += speed * dt / (0.26 * size);   // 바퀴 반지름 약 0.26 × 키
-        for (const S of ['L', 'R']) {
-          bones['wheel' + S].rotation.x = wheel;
-          rx(bones['arm' + S], Math.sin(phase * 1.2) * 0.25 * amt);
-        }
-        bones.spine.rotation.x = (0.06 + Math.max(0, Math.sin(phase * 1.2)) * 0.1) * amt;
+        // 휠체어: 바퀴·팔을 따로 돌리면 모양이 구부러지고 늘어나서, 몸통만 살짝 기울여요 (바퀴는 위치 이동으로 굴러가는 느낌)
+        bones.wheelL.rotation.x = bones.wheelR.rotation.x = 0; bones.armL.rotation.x = bones.armR.rotation.x = 0;
+        bones.spine.rotation.x = 0.04 * amt;
       }
     },
   };

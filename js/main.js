@@ -3,6 +3,7 @@ import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { CONFIG, INFO, SPORTS, BUILDINGS, STATIONS, DECOR, CHERRY, GREEN, GATE, WORLD, CAMPUS, NATURE, LAKE, MAP, PLAYER_START, GUIDE_POS } from './config.js';
 import { autoRig } from './rig.js';
 import * as P from './placeholders.js';
+import { initWild } from './wild.js';
 
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -241,7 +242,7 @@ const POOL = { deck: { x0: 20.4, x1: 39.6, z0: -27.6, z1: -8.4 }, water: { x0: 2
 addSpot({ kind: 'sit', x: 36.5, z: POOL.chair.z, y: 2.15, face: -Math.PI / 2, stand: { x: 38.8, z: POOL.chair.z + 1.2 }, label: '앉기', ico: '♿', r: 2.4, camFront: [4.5, 7], say: '수영장 승강 의자예요. 휠체어 친구들이 물에 들어갈 때 써요!', tip: { x: POOL.chair.x, y: 3, z: POOL.chair.z } });
 for (const bx of [24.0, 29.0, 34.0]) addSpot({ kind: 'view', x: bx, z: -26.2, y: 3.4, face: 0, stand: { x: bx, z: -23.6 }, label: '출발대 서기', ico: '🏊', r: 1.9, say: '출발대 위에서 수영장 정면을 바라봐요! 걸으면 내려와요.', tip: { x: bx, y: 3, z: -26.3 } });
 // 거리 분위기용 가로등
-for (const [lx, lz] of [[-3.2, 27], [3.2, 27], [-3.2, 20], [3.2, 20], [-16, 13.5], [14, 9.4], [-3.2, -8], [3.2, -8], [-18, -1.5], [18, 1]]) {
+for (const [lx, lz] of [[-3.2, 27], [3.2, 27], [-3.2, 20], [3.2, 20], [-16, 13.5], [5.2, 12.5], [-3.2, -8], [3.2, -8], [-18, -1.5], [18, 1]]) {
   place({ model: 'lamp.glb', size: 4.4, rotY: lx > 0 ? 180 : 0, x: lx, z: lz }, () => { const l = P.box(0.2, 4, 0.2, P.mat(0x55555f)); l.position.y = 2; return l; }); circles.push({ x: lx, z: lz, r: 0.35 });
 }
 // 축구공과 골대: 운동장
@@ -259,7 +260,35 @@ const portalFallback = P.buildPortal(); portalHolder.add(portalFallback);
 loadModel('portal.glb').then((src) => { if (!src) return; portalHolder.remove(portalFallback); const m = fitModel(src, 3.6); portalHolder.add(m); portalHolder.userData.model = m; });
 const pinHolder = new THREE.Group(); scene.add(pinHolder);
 const pinFallback = P.buildMarker(); pinHolder.add(pinFallback);
-loadModel('pin.glb').then((src) => { if (!src) return; pinHolder.remove(pinFallback); const m = fitModel(src, 2.2); pinHolder.add(m); });
+loadModel('pin.glb').then((src) => { if (!src) return; pinHolder.remove(pinFallback); const m = fitModel(src, 1.45); pinHolder.add(m); });
+
+
+/* ---------- 빛 효과: 안내판(푸른빛), 위치 핀(황금빛), 포털(신비한 빛) ---------- */
+const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.25, 'rgba(255,255,255,0.55)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(c); })();
+const glowSprite = (color, size, op) => { const m = new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: op, depthWrite: false, blending: THREE.AdditiveBlending }); const sp = new THREE.Sprite(m); sp.scale.set(size, size, 1); sp.userData.op = op; return sp; };
+const FX = [];
+// 안내판: 푸른 빛
+for (const id of ['holo1', 'holo2']) { const h = decorHolder[id]; if (!h) continue; const a = glowSprite(0x4cd8ff, 4.4, 0.5), b = glowSprite(0x8fe9ff, 2.2, 0.55), f = glowSprite(0x35b8ff, 3.2, 0.3); a.position.set(0, 2.7, 0.2); b.position.set(0, 2.7, 0.4); f.position.set(0, 0.5, 0); h.add(a, b, f); FX.push((t, calm) => { const k = calm ? 0 : Math.sin(t * 2.2 + h.position.x) * 0.5 + 0.5; a.material.opacity = 0.36 + k * 0.22; b.material.opacity = 0.4 + k * 0.22; f.material.opacity = 0.2 + k * 0.1; }); }
+// 위치 핀: 작게, 황금빛
+const pinGlowA = glowSprite(0xffd24a, 3.2, 0.5), pinGlowB = glowSprite(0xfff1a8, 1.5, 0.6); pinGlowA.position.y = 1.1; pinGlowB.position.y = 1.1; pinHolder.add(pinGlowA, pinGlowB);
+const pinSparks = Array.from({ length: 6 }, (_, i) => { const sp = glowSprite(0xffe27a, 0.55, 0.9); pinHolder.add(sp); return sp; });
+FX.push((t, calm) => { const k = calm ? 0.5 : Math.sin(t * 3) * 0.5 + 0.5; pinGlowA.material.opacity = 0.38 + k * 0.25; pinGlowA.scale.setScalar(3 + k * 0.5); pinSparks.forEach((sp, i) => { const a = t * 1.4 + i * 1.047; sp.position.set(Math.cos(a) * 0.95, 1.1 + Math.sin(t * 2 + i) * 0.6, Math.sin(a) * 0.95); sp.material.opacity = calm ? 0.6 : 0.5 + Math.sin(t * 5 + i * 2) * 0.4; }); });
+// 포털: 신비한 보랏빛·청록빛과 떠오르는 빛 알갱이
+const portGlowA = glowSprite(0xa66bff, 7.5, 0.5), portGlowB = glowSprite(0x4fe3ff, 4.6, 0.45), portGlowC = glowSprite(0xffffff, 1.8, 0.55);
+portGlowA.position.y = portGlowB.position.y = portGlowC.position.y = 2.0; portGlowA.position.z = portGlowB.position.z = portGlowC.position.z = 0.25; portalHolder.add(portGlowA, portGlowB, portGlowC);
+const portSparks = Array.from({ length: 22 }, (_, i) => { const sp = glowSprite(i % 3 ? 0xc9a8ff : 0x7fefff, 0.42, 0.8); sp.userData.ph = i / 22; portalHolder.add(sp); return sp; });
+FX.push((t, calm) => { const k = calm ? 0.5 : Math.sin(t * 1.6) * 0.5 + 0.5; portGlowA.material.opacity = 0.36 + k * 0.22; portGlowB.material.opacity = 0.3 + (1 - k) * 0.22; portGlowC.scale.setScalar(1.6 + k * 0.5);
+  portSparks.forEach((sp, i) => { const u = (t * 0.22 + sp.userData.ph) % 1, a = sp.userData.ph * 40 + t * 0.9, rr = 1.55 + Math.sin(u * 6.283) * 0.25; sp.position.set(Math.cos(a) * rr, 0.3 + u * 3.4, Math.sin(a) * rr * 0.5 + 0.2); sp.material.opacity = calm ? 0.45 : Math.sin(u * Math.PI) * 0.9; }); });
+
+
+/* 테니스 코트 모서리: 모델에 구워져 있던 라켓과 공 자국을 코트 색 판으로 덮고, 선을 다시 그려요 */
+(function courtPatch() {
+  const st = STATIONS.find((x) => x.id === 'st-tn'); if (!st) return;
+  const Y = 0.845, add = (x0, x1, z0, z1, col) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 })); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, Y, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); };
+  const BLUE = 0x2149ad, GREEN = 0x2f8c58, WHITE = 0xeef2f8;
+  add(13.5, 15.62, 12.9, 15.14, BLUE); add(15.62, 16.6, 12.9, 15.14, GREEN); add(13.5, 16.6, 15.14, 16.1, GREEN);
+  add(15.5, 15.6, 12.9, 15.14, WHITE); add(13.5, 15.6, 15.04, 15.14, WHITE);
+})();
 
 /* ---------- 주인공, 친구, 안내원 ---------- */
 const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelchair: { model: 'wheelchair.glb', size: 2.2, name: '휠체어 선수' },
@@ -339,15 +368,19 @@ const LINES = {
   wheelchair: ['휠체어 레이싱은 정말 빨라요! 바람이 쌩쌩 🌬️', '수영, 육상, 탁구… 휠체어 친구도 함께해요.', '체육관에서 메달을 모아 봐요 🥇', '이 학교는 모두가 함께 운동하는 곳이에요 🤝'],
 };
 function spawnCrowd() {
-  const n = matchMedia('(max-width: 700px)').matches ? 5 : CROWD.length;
+  // 내 캐릭터와 짝꿍(친구)과 같은 모습은 빼고, 같은 모습끼리도 겹치지 않게 한 명씩만 보여요
+  for (const c of crowd) scene.remove(c.g); crowd.length = 0;
+  const me = settings.avatar, mate = PARTNER[me]; const seen = new Set([me, mate]);
+  let list = CROWD.filter((d) => { if (seen.has(d.rig)) return false; seen.add(d.rig); return true; });
+  if (matchMedia('(max-width: 700px)').matches) list = list.slice(0, 5);
   const pts = WALK_PTS.filter((p) => !blockedAt(p.x, p.z, 1.2));
-  for (let i = 0; i < n; i++) {
-    const def = CROWD[i], start = pts[(i * 7 + 3) % pts.length];
+  list.forEach((def, i) => {
+    const start = pts[(i * 7 + 3) % pts.length];
     const g = new THREE.Group(); g.position.set(start.x, 0, start.z); g.rotation.y = i * 2.1; scene.add(g);
     const c = { g, def, rig: null, route: [], wait: Math.random() * 3, face: g.rotation.y, spd: 0 };
-    loadModel(def.file).then((src) => { if (!src) return; const m = fitModel(src, def.size); g.add(m); c.rig = autoRig(m, def.rig); });
+    loadModel(def.file).then((src) => { if (!src || !crowd.includes(c)) return; const m = fitModel(src, def.size); g.add(m); c.rig = autoRig(m, def.rig); });
     crowd.push(c);
-  }
+  });
 }
 function pickRoute(c) {
   const pts = WALK_PTS.filter((p) => !blockedAt(p.x, p.z, 1.2) && Math.hypot(p.x - c.g.position.x, p.z - c.g.position.z) > 8);
@@ -648,7 +681,7 @@ $('#settings-close').addEventListener('click', () => { setPanel.hidden = true; }
 $('#t-easy').checked = settings.easy;
 document.querySelectorAll('.avatar').forEach((b) => {
   b.classList.toggle('on', b.dataset.k === settings.avatar);
-  b.addEventListener('click', () => { document.querySelectorAll('.avatar').forEach((x) => x.classList.toggle('on', x === b)); setAvatar(b.dataset.k); });
+  b.addEventListener('click', () => { document.querySelectorAll('.avatar').forEach((x) => x.classList.toggle('on', x === b)); setAvatar(b.dataset.k); spawnCrowd(); });
 });
 $('#start').addEventListener('click', () => {
   settings.easy = $('#t-easy').checked; store.set('easy', settings.easy); $('#opt-easy').checked = settings.easy;
@@ -764,7 +797,7 @@ function frameLoop() {
     if (racer.holder && riding) { racer.holder.position.set(p.x, 0, p.z); racer.holder.rotation.y = facing; }
     playerBody.userData.sit = sitK; if (playerRig && playerRig.setSit) playerRig.setSit(sitK);
     updateBall(dt, Math.hypot(vel.x, vel.z));
-    updateCrowd(dt); updateNpcSay(dt); updateMascot(t, dt);
+    updateCrowd(dt); updateNpcSay(dt); updateMascot(t, dt); wild.update(dt, t, settings.calm); for (const f of FX) f(t, settings.calm);
     if (playerRig) playerRig.update(dt, settings.calm ? 0 : sp, AVATARS[settings.avatar].size);
     if (npcRig) npcRig.update(dt, 0);
     if (sp > 0.3 && !settings.calm) { walkT += dt * sp * 1.4; const hop = AVATARS[settings.avatar].hop ? 2.6 : 1; bobY = Math.abs(Math.sin(walkT * (hop > 1 ? 1.5 : 1))) * 0.09 * hop; playerBody.rotation.z = Math.sin(walkT) * 0.05 * hop; } else { bobY *= 0.8; playerBody.rotation.z *= 0.8; }
@@ -827,6 +860,7 @@ function frameLoop() {
   if (mode === 'world') drawMap(t);
 }
 setAvatar(settings.avatar); spawnCrowd();
+const wild = initWild({ scene, loadModel, fitModel, blockedAt, player, say, medalPop, flags, store, P, burst: null });
 frameLoop();
 
 // 점검용

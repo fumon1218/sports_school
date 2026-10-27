@@ -46,7 +46,7 @@ export const BUILDINGS = [
 
 // 체험 구역: 들어가면 해당 종목 게임이 바로 열립니다. (open:false 종목은 '곧 열려요')
 export const STATIONS = [
-  { id: 'st-tt', sport: 'tabletennis', label: '탁구', model: 'pingpong.glb', size: 7, dim: [0.66, 0.38, 1], x: -6, z: 10, rotY: 0 },
+  { id: 'st-tt', sport: 'tabletennis', label: '탁구', model: 'pingpong.glb', size: 4.4, dim: [0.66, 0.38, 1], x: -6, z: 10, rotY: 0 },
   { id: 'st-tn', sport: 'tennis', label: '테니스', model: 'tennis.glb', size: 12, dim: [0.74, 0.22, 1], x: 12, z: 10, rotY: 0 },
   { id: 'st-at', sport: 'athletics', label: '육상', model: 'hurdles.glb', size: 11, dim: [0.62, 0.26, 1], x: 22, z: 10, rotY: 0 },
   { id: 'st-tk', sport: 'taekwondo', label: '태권도', model: 'boxing.glb', size: 8, dim: [1, 0.52, 0.96], x: 31, z: 11, rotY: 0 },
@@ -59,12 +59,12 @@ export const DECOR = [
   { id: 'trophy', model: 'trophy.glb', size: 3.4, dim: [1, 0.96, 0.59], x: 0, z: 0, rotY: 0, r: 1.2, y: 0 },
   { id: 'patio', model: 'patio.glb', size: 13.5, dim: [0.99, 0.45, 0.57], x: -1.5, z: -13.5, rotY: 0, walk: true },
   { id: 'holo1', model: 'holosign.glb', size: 3.6, dim: [0.9, 1, 0.45], x: -9, z: 3, rotY: 0, r: 0.8 },
-  { id: 'holo2', model: 'holosign.glb', size: 3.6, dim: [0.9, 1, 0.45], x: 9.5, z: 7.5, rotY: 0, r: 0.8 },
+  { id: 'holo2', model: 'holosign.glb', size: 3.6, dim: [0.9, 1, 0.45], x: 5.0, z: 6.4, rotY: 0, r: 0.8 },
   { id: 'racer', model: 'racer.glb', size: 3.4, dim: [1, 0.46, 0.49], x: -9.5, z: 16, rotY: 90, r: 1.2 },
 ];
 
 // 벚나무 (모델 복제)
-export const CHERRY = [[-9, -5], [8, -10], [-10.5, 8], [10, 5], [-34, -8], [36, -10], [42, -5], [-5, -27], [8, -27]];
+export const CHERRY = [[-9, -5], [8, -10], [-10.5, 8], [3.6, 1.2], [-34, -8], [36, -10], [42, -5], [-5, -27], [8, -27]];
 // 일반 나무 (임시 도형)
 export const GREEN = [[-42, 22], [-36, 24], [-28, 22], [-20, 24], [-42, 12], [28, 24], [20, 23], [-42, -24], [-42, -2], [46, -26], [14, -27], [-14, -26], [24, 18], [-24, 19], [-17, -14], [20, 8]];
 

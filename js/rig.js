@@ -14,7 +14,7 @@ const segDist = (px, py, ax, ay, bx, by) => {
 function humanoid(p) {
   const { hip, knee, sx, sy, hx, hy, neck, legX } = p;
   return {
-    type: 'human', stride: p.stride || 1.15, kneeY: knee,
+    type: 'human', stride: p.stride || 1.15, kneeY: knee, hand: [sx, sy, hx, hy],
     bones: [['hips', null, 0, hip, 0], ['spine', 'hips', 0, hip + 0.07, 0], ['head', 'spine', 0, neck - 0.02, 0],
       ['armL', 'spine', sx, sy, 0], ['armR', 'spine', -sx, sy, 0],
       ['legL', 'hips', legX, hip, 0], ['legR', 'hips', -legX, hip, 0],
@@ -40,7 +40,7 @@ function humanoid(p) {
 function wheelchair(p) {
   const { wcx, wcy, wcz, wr, sx, sy, hx, hy, neck } = p;
   return {
-    type: 'wheel', stride: 1.0,
+    type: 'wheel', stride: 1.0, hand: [sx, sy, hx, hy],
     bones: [['hips', null, 0, 0.45, 0], ['spine', 'hips', 0, 0.52, 0], ['head', 'spine', 0, neck - 0.02, 0],
       ['armL', 'spine', sx, sy, 0], ['armR', 'spine', -sx, sy, 0],
       ['wheelL', 'hips', wcx, wcy, wcz], ['wheelR', 'hips', -wcx, wcy, wcz]],
@@ -122,8 +122,13 @@ export function autoRig(group, kind) {
   const dropY = spec.type === 'human' ? (spec.bones[0][3] - spec.kneeY) * H : 0;
   const stride = spec.stride;
   const rx = (b, a) => { if (b) b.rotation.x = a; };
+  // 테니스 같은 자세 덮어쓰기: ready 0~1(준비 자세), swing 0~1(스윙 진행, -1이면 쉬는 중)
+  const pose = { ready: 0, swing: -1 };
+  const hand = new THREE.Vector3(-(spec.hand[2] - spec.hand[0]) * H, (spec.hand[3] - spec.hand[1]) * H, 0); // 오른손 위치(오른팔 뼈 기준)
+  const mix = (a, b, k) => a + (b - a) * k;
+  const pk = (s, pts) => { for (let i = 1; i < pts.length; i++) if (s <= pts[i][0]) { const [t0, v0] = pts[i - 1], [t1, v1] = pts[i]; const k = (s - t0) / (t1 - t0); return mix(v0, v1, k * k * (3 - 2 * k)); } return pts[pts.length - 1][1]; };
   return {
-    kind, bones,
+    kind, bones, pose, hand, H, type: spec.type,
     // dt: 시간(초), speed: 이동 속도(m/s), size: 모델 키(m) — 바퀴 굴림 계산용
     // 앉기: 0(서 있음) ~ 1(의자에 앉음). 다리를 앞으로, 무릎을 굽히고 엉덩이를 내려요.
     setSit(k) { sit = k; },
@@ -148,10 +153,23 @@ export function autoRig(group, kind) {
           bones.spine.rotation.x *= (1 - sit);
         }
         bones.hips.position.y = bones.hips.userData.rest.y - dropY * sit;
+        if (pose.ready > 0.001 && sit < 0.5) {
+          const r = pose.ready, sw = pose.swing, hit = sw >= 0;
+          const yaw = hit ? pk(sw, [[0, 0], [0.3, -0.75], [0.52, 0.85], [1, 0]]) : 0;
+          const armX = hit ? pk(sw, [[0, -0.95], [0.3, -0.55], [0.52, -1.55], [0.75, -1.2], [1, -0.95]]) : -0.95;
+          const armZ = hit ? pk(sw, [[0, 0.3], [0.3, 0.55], [0.52, -0.3], [1, 0.3]]) : 0.3;
+          const lean = hit ? pk(sw, [[0, 0.2], [0.3, 0.12], [0.52, 0.32], [1, 0.2]]) : 0.2;
+          for (const S of ['L', 'R']) { const l = bones['leg' + S], k = bones['knee' + S]; l.rotation.x = mix(l.rotation.x, S === 'L' ? -0.3 : -0.38, r); k.rotation.x = mix(k.rotation.x, S === 'L' ? 0.55 : 0.62, r); }
+          bones.armR.rotation.x = mix(bones.armR.rotation.x, armX, r); bones.armR.rotation.z = mix(bones.armR.rotation.z, armZ, r);
+          bones.armL.rotation.x = mix(bones.armL.rotation.x, hit ? pk(sw, [[0, -0.5], [0.3, -0.9], [0.52, -0.35], [1, -0.5]]) : -0.5, r); bones.armL.rotation.z = mix(bones.armL.rotation.z, -0.25, r);
+          bones.spine.rotation.x = mix(bones.spine.rotation.x, lean, r); bones.spine.rotation.y = mix(bones.spine.rotation.y, yaw, r); bones.hips.rotation.y = mix(bones.hips.rotation.y, yaw * 0.4, r);
+          bones.hips.position.y -= dropY * 0.2 * r;
+        }
       } else {
         // 휠체어: 바퀴·팔을 따로 돌리면 모양이 구부러지고 늘어나서, 몸통만 살짝 기울여요 (바퀴는 위치 이동으로 굴러가는 느낌)
         bones.wheelL.rotation.x = bones.wheelR.rotation.x = 0; bones.armL.rotation.x = bones.armR.rotation.x = 0;
         bones.spine.rotation.x = 0.04 * amt;
+        if (pose.ready > 0.001) { const sw = pose.swing; bones.spine.rotation.y = pose.ready * (sw >= 0 ? pk(sw, [[0, 0], [0.3, -0.5], [0.52, 0.6], [1, 0]]) : 0); bones.spine.rotation.x += pose.ready * 0.1; }
       }
     },
   };

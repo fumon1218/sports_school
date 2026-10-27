@@ -4,6 +4,7 @@ import { CONFIG, INFO, SPORTS, BUILDINGS, STATIONS, DECOR, CHERRY, GREEN, GATE, 
 import { autoRig } from './rig.js';
 import * as P from './placeholders.js';
 import { initWild } from './wild.js';
+import { initTennis, courtHeight } from './tennisfx.js';
 
 const $ = (s) => document.querySelector(s);
 const store = {
@@ -155,12 +156,14 @@ const ringMats = [];
 STATIONS.forEach((st) => {
   place(st, st.sport === 'badminton' ? courtFallback : blockFallback);
   const f = footprint(st);
-  addBox(st.x, st.z, f.w * 0.9, f.d * 0.9);
+  if (st.id !== 'st-tn') addBox(st.x, st.z, f.w * 0.9, f.d * 0.9); // 테니스 코트는 올라가서 설 수 있어요
   const sp = sportById[st.sport]; const open = !!sp.open;
   const zx = st.x, zz = st.z + f.d / 2 + 2.3;
   zones.push({ id: st.id, kind: 'game', sport: st.sport, x: zx, z: zz, r: 2.1, label: st.label, open, tip: { x: zx, y: Math.max(f.h + 1.6, 4.2), z: zz } });
   addLabel(`${st.label}${open ? '' : ' (곧)'}`, st.x, f.h + 2.0, st.z, 0.95);
 });
+addBox(12, 10.22, 8.4, 0.5); // 테니스 네트
+circles.push({ x: 12, z: 6.1, r: 0.9 }); // 공 기계
 // 입장 원(바닥 표시)
 zones.forEach((z) => {
   const sp = z.sport ? sportById[z.sport] : null;
@@ -281,13 +284,14 @@ FX.push((t, calm) => { const k = calm ? 0.5 : Math.sin(t * 1.6) * 0.5 + 0.5; por
   portSparks.forEach((sp, i) => { const u = (t * 0.22 + sp.userData.ph) % 1, a = sp.userData.ph * 40 + t * 0.9, rr = 1.55 + Math.sin(u * 6.283) * 0.25; sp.position.set(Math.cos(a) * rr, 0.3 + u * 3.4, Math.sin(a) * rr * 0.5 + 0.2); sp.material.opacity = calm ? 0.45 : Math.sin(u * Math.PI) * 0.9; }); });
 
 
-/* 테니스 코트 모서리: 모델에 구워져 있던 라켓과 공 자국을 코트 색 판으로 덮고, 선을 다시 그려요 */
-(function courtPatch() {
-  const st = STATIONS.find((x) => x.id === 'st-tn'); if (!st) return;
-  const Y = 0.845, add = (x0, x1, z0, z1, col) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 })); m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, Y, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); };
-  const BLUE = 0x2149ad, GREEN = 0x2f8c58, WHITE = 0xeef2f8;
-  add(13.5, 15.62, 12.9, 15.14, BLUE); add(15.62, 16.6, 12.9, 15.14, GREEN); add(13.5, 16.6, 15.14, 16.1, GREEN);
-  add(15.5, 15.6, 12.9, 15.14, WHITE); add(13.5, 15.6, 15.04, 15.14, WHITE);
+/* 테니스 코트 바닥: 모델에 구워져 있던 라켓·공 자국을 가리려고, 새로 만든 깨끗한 코트 그림을 바닥에 깔아요 */
+const courtFloor = (() => {
+  const st = STATIONS.find((x) => x.id === 'st-tn'); if (!st) return null;
+  const f = footprint(st);
+  const tex = new THREE.TextureLoader().load('assets/tex/tennis_court.webp'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(f.w, f.d), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  m.rotation.x = -Math.PI / 2; m.position.set(st.x, 0.805, st.z); m.receiveShadow = true; scene.add(m);
+  return { m, st, f };
 })();
 
 /* ---------- 주인공, 친구, 안내원 ---------- */
@@ -493,7 +497,7 @@ function dismountRacer() {
   riding = false; const c = decorCircle.racer, h = racer.holder; if (c && h) { c.x = h.position.x; c.z = h.position.z; c.r = 1.2; } if (racer.spot && h) { racer.spot.x = h.position.x; racer.spot.z = h.position.z; racer.spot.tip = { x: h.position.x, y: 2.6, z: h.position.z }; }
   const f = facing; player.position.x += Math.sin(f + Math.PI / 2) * 2.2; player.position.z += Math.cos(f + Math.PI / 2) * 2.2; say('멋진 드라이브였어요!', 2.5);
 }
-const groundY = (x, z) => { if (x > POOL.deck.x0 && x < POOL.deck.x1 && z > POOL.deck.z0 && z < POOL.deck.z1) { const w = POOL.water; if (x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1) return 0.02; } return heightAt(x, z); };
+const groundY = (x, z) => { if (x > POOL.deck.x0 && x < POOL.deck.x1 && z > POOL.deck.z0 && z < POOL.deck.z1) { const w = POOL.water; if (x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1) return 0.02; } return Math.max(heightAt(x, z), courtHeight(x, z)); };
 // 축구
 function kickBall(power, dirx, dirz) { const l = Math.hypot(dirx, dirz) || 1; ball.vx = dirx / l * power; ball.vz = dirz / l * power; ball.hop = 0.001; }
 function nearBall() { return Math.hypot(player.position.x - ball.x, player.position.z - ball.z) < 3.0 && !seat && !riding; }
@@ -532,6 +536,7 @@ function doAction() {
   if (mode !== 'world') return;
   if (seat || riding) return standUp();
   const sp0 = nearSpot(); if (sp0) return sitDown(sp0);
+  if (tn.active) { if (!tn.press()) say('공이 가까이 올 때 눌러요! 노란 동그라미 근처에 서 보세요.', 2.4); return; }
   if (nearBall() && onField()) { const dx = Math.sin(facing), dz = Math.cos(facing); const bx = ball.x - player.position.x, bz = ball.z - player.position.z; kickBall(15, dx + bx * 0.15, dz + bz * 0.15); say('뻥! ⚽ 골대에 넣어 봐요!', 2); return; }
   const z = zoneNear(player.position.x, player.position.z, 0.6);
   if (z) return enterZone(z);
@@ -797,7 +802,7 @@ function frameLoop() {
     if (racer.holder && riding) { racer.holder.position.set(p.x, 0, p.z); racer.holder.rotation.y = facing; }
     playerBody.userData.sit = sitK; if (playerRig && playerRig.setSit) playerRig.setSit(sitK);
     updateBall(dt, Math.hypot(vel.x, vel.z));
-    updateCrowd(dt); updateNpcSay(dt); updateMascot(t, dt); wild.update(dt, t, settings.calm); for (const f of FX) f(t, settings.calm);
+    updateCrowd(dt); updateNpcSay(dt); updateMascot(t, dt); wild.update(dt, t, settings.calm); tn.update(dt, t, settings.calm); for (const f of FX) f(t, settings.calm);
     if (playerRig) playerRig.update(dt, settings.calm ? 0 : sp, AVATARS[settings.avatar].size);
     if (npcRig) npcRig.update(dt, 0);
     if (sp > 0.3 && !settings.calm) { walkT += dt * sp * 1.4; const hop = AVATARS[settings.avatar].hop ? 2.6 : 1; bobY = Math.abs(Math.sin(walkT * (hop > 1 ? 1.5 : 1))) * 0.09 * hop; playerBody.rotation.z = Math.sin(walkT) * 0.05 * hop; } else { bobY *= 0.8; playerBody.rotation.z *= 0.8; }
@@ -810,10 +815,11 @@ function frameLoop() {
     const spN = (seat || riding) ? null : nearSpot(), ballN = !seat && !riding && onField() && nearBall();
     if (seat || riding) { label = riding ? '내리기' : '일어나기'; ico = '🧍'; }
     else if (spN) { label = spN.label; ico = spN.ico; }
+    else if (tn.active) { label = '치기'; ico = '🎾'; }
     else if (ballN) { label = '공 차기'; ico = '⚽'; }
     else if (zn) { label = zn.open ? '들어가기' : '알아보기'; ico = zn.open ? '🚪' : '❓'; } else if (nearLocked) { label = '알아보기'; ico = '❓'; }
     if (act.dataset.label !== label) { act.dataset.label = label; act.querySelector('b').textContent = label; act.querySelector('span').textContent = ico; }
-    act.classList.toggle('ready', !!((zn && zn.open) || spN || ballN || seat || riding));
+    act.classList.toggle('ready', !!((zn && zn.open) || spN || ballN || seat || riding || tn.hittable));
     if (sayTimer > 0) sayTimer -= dt;
     else if (spN) say(spN.hint || (spN.kind === 'ride' ? spN.say : spN.kind === 'view' ? '출발대에 올라설 수 있어요! 서기 버튼을 눌러요.' : '앉을 수 있어요! 앉기 버튼을 눌러요.'));
     else if (ballN) say('공이 있어요! 걸어가서 차거나 버튼을 눌러요. 골대에 넣어 봐요!');
@@ -860,6 +866,7 @@ function frameLoop() {
   if (mode === 'world') drawMap(t);
 }
 setAvatar(settings.avatar); spawnCrowd();
+const tn = initTennis({ scene, loadModel, fitModel, player, say, settings, getRig: () => playerRig });
 const wild = initWild({ scene, loadModel, fitModel, blockedAt, player, say, medalPop, flags, store, P, burst: null });
 frameLoop();
 
@@ -870,4 +877,4 @@ function debugShow() { // 충돌 범위와 입장 원을 위에서 본 모습으
   circles.forEach((c) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(c.r, c.r, 2, 16), m); o.position.set(c.x, 1, c.z); scene.add(o); });
   const m2 = new THREE.MeshBasicMaterial({ color: 0x00ccff }); spots.forEach((sp) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 8), m2); o.position.set(sp.x, 3, sp.z); scene.add(o); });
 }
-window.__ssw = { heightAt, get cam() { return { camYaw, camPitch, camZoomK }; }, setView: (y, p, z) => { camYaw = y; camPitch = p; camZoomK = z || 1; }, crowd, spots, ball, FIELD, POOL, get seat() { return seat; }, get riding() { return riding; }, sitDown, standUp, kickBall, blockedAt, player, get mode() { return mode; }, enterGym, openGame, enterZone, zones, SPORTS, scene, camera, boxes, circles, debugShow, topDown: (v = true) => { topDown = v; }, setCam: (pos, look) => { camDbg = pos ? { pos, look } : null; }, findPath, loadedOk, loadedFail, medals, flags, startGuide, get route() { return route; }, setAvatar };
+window.__ssw = { get tn() { return tn; }, get rig() { return playerRig; }, heightAt, get cam() { return { camYaw, camPitch, camZoomK }; }, setView: (y, p, z) => { camYaw = y; camPitch = p; camZoomK = z || 1; }, crowd, spots, ball, FIELD, POOL, get seat() { return seat; }, get riding() { return riding; }, sitDown, standUp, kickBall, blockedAt, player, get mode() { return mode; }, enterGym, openGame, enterZone, zones, SPORTS, scene, camera, boxes, circles, debugShow, topDown: (v = true) => { topDown = v; }, setCam: (pos, look) => { camDbg = pos ? { pos, look } : null; }, findPath, loadedOk, loadedFail, medals, flags, startGuide, get route() { return route; }, setAvatar };

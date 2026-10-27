@@ -30,10 +30,10 @@ function draw(c, W, H) {
   c.strokeStyle = '#ffffffaa'; c.lineWidth = 2; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(nx - 26, gy - nh + 10 + i * 12); c.lineTo(nx + 26, gy - nh + 10 + i * 12); c.stroke(); }
   // 선수들: 옥쌤 교실의 테니스 친구들이 라켓을 들고 나와요
   const ph = Math.min(H * 0.5, W * 0.4), px = W * 0.22, ox = W * 0.8, s = ph * 0.5;
-  const mine = swing > 0.15 ? 'tn_boy_hit' : (rally > 0 && side === 'toOpp' && u < 0.25 ? 'tn_boy_cheer' : 'tn_boy');
+  const mine = swing > 0.15 ? 'bd_smash' : (rally > 0 && side === 'toOpp' && u < 0.25 ? 'bd_cheer' : 'bd_ready');
   const bob = Math.abs(Math.sin(K.t * 3)) * 3;
-  K.spr(mine, px, gy + 22 - bob * 0.3, ph, { px: 0.42 });
-  K.spr(side === 'toOpp' && u > 0.55 ? 'tn_girl_hit' : 'tn_girl', ox, gy + 22 - bob * 0.3, ph * 0.92, { face: 1, px: 0.55 });
+  K.spr(mine, px, gy + 22 - bob * 0.3, ph, { px: 0.5 });
+  K.spr(side === 'toOpp' && u > 0.55 ? 'bd_smash' : 'bd_ready', ox, gy + 22 - bob * 0.3, ph * 0.92, { face: -1, px: 0.5 });
   // 셔틀콕
   if (serveWait <= 0 || side === 'toOpp') {
     const hp = { x: px + ph * 0.38, y: gy - ph * 0.78 }, op = { x: ox - ph * 0.38, y: gy - ph * 0.78 }, a = side === 'toOpp' ? hp : op, b = side === 'toOpp' ? op : hp;

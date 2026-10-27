@@ -415,7 +415,7 @@ function updateCrowd(dt) {
 const npcSay = document.createElement('div'); npcSay.id = 'npc-say'; npcSay.hidden = true; document.body.appendChild(npcSay);
 const nsV = new THREE.Vector3(); let nsWho = null, nsT = 0, nsI = 0;
 function updateNpcSay(dt) {
-  let best = null, bd = 7.5; if (mode === 'world') for (const c of crowd) { if (!c.rig) continue; const d = Math.hypot(player.position.x - c.g.position.x, player.position.z - c.g.position.z); if (d < bd) { bd = d; best = c; } }
+  let best = null, bd = 7.5; if (mode === 'world' && !tn.active) for (const c of crowd) { if (!c.rig) continue; const d = Math.hypot(player.position.x - c.g.position.x, player.position.z - c.g.position.z); if (d < bd) { bd = d; best = c; } }
   if (!best) { if (!npcSay.hidden) npcSay.hidden = true; nsWho = null; return; }
   if (best !== nsWho) { nsWho = best; nsT = 0; nsI = Math.floor(Math.random() * 4); }
   nsT += dt; if (nsT > 5.5) { nsT = 0; nsI++; }
@@ -721,7 +721,7 @@ tipEl.addEventListener('click', (e) => { e.stopPropagation(); if (tipZone) { if 
 tipEl.addEventListener('pointerdown', (e) => e.stopPropagation());
 function updateTip() {
   let best = null, bd = 1e9;
-  if (mode === 'world' && !route) {
+  if (mode === 'world' && !route && !tn.active) {
     for (const z of zones) { const d = Math.hypot(player.position.x - z.x, player.position.z - z.z); if (d < z.r + 9 && d < bd) { bd = d; best = z; } }
     if (seat || riding) best = seat || racer.spot;
     else for (const sp of spots) { const d = Math.hypot(player.position.x - sp.x, player.position.z - sp.z); if (d < sp.r + 4 && d < bd) { bd = d; best = sp; } }
@@ -796,7 +796,7 @@ function frameLoop() {
     { const ty = seat ? seatY(seat) : groundY(p.x, p.z); p.y += (ty - p.y) * (1 - Math.exp(-(seat ? 8 : 12) * dt)); }
     sitK += (((seat && seat.kind === 'sit') || riding ? 1 : 0) - sitK) * (1 - Math.exp(-9 * dt));
     camMix += ((seat && seat.camFront ? 1 : 0) - camMix) * (1 - Math.exp(-3.5 * dt));
-    { const hide = camView > 0.25; for (const l of labelSprites) l.visible = !hide; }
+    { const hide = camView > 0.25 || tn.active; for (const l of labelSprites) l.visible = !hide; }
     camView += ((seat && seat.kind === 'view' ? 1 : 0) - camView) * (1 - Math.exp(-3.5 * dt));
     camZoom += ((seat && seat.kind === 'sit' ? 0.72 : riding ? 0.9 : 1) - camZoom) * (1 - Math.exp(-3 * dt));
     if (racer.holder && riding) { racer.holder.position.set(p.x, 0, p.z); racer.holder.rotation.y = facing; }

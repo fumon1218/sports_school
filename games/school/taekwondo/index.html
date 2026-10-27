@@ -10,7 +10,7 @@ K.onPress(() => {
   if (state === 'pad') {
     const left = RING - padT, ok = left < WIN, good = left < WIN * 0.55; kick = 1; kickH = padH; state = 'kick';
     hits++; n++; if (good) { perfect++; K.say('쾅! 격파 성공! 최고예요!'); } else if (ok) K.say('좋아요! 격파!'); else K.say('힘찬 발차기! 격파!');
-    K.good(); setTimeout(() => { const bx = K.W * 0.34 + Math.min(K.W, K.H) * 0.2 * 1.12, by = K.H * 0.72 - padH * Math.min(K.H, K.W) * 0.19; K.burst(bx, by, '#e9b873', 18); K.burst(bx, by, '#fff', 8); K.beep(160, 0.18, 'square', 0.14); brokeT = 0.001; pieces = []; for (let i = 0; i < boards * 2; i++) pieces.push({ x: bx, y: by, vx: (i % 2 ? 1 : -1) * (90 + Math.random() * 120), vy: -160 - Math.random() * 120, r: 0, vr: (i % 2 ? 1 : -1) * (4 + Math.random() * 4), lay: (i >> 1) }); }, 140);
+    K.good(); setTimeout(() => { const sS = Math.min(K.H, K.W) * 0.2, bx = K.W * 0.34 - 0.1 * sS + (0.998 - 0.326) * (sS * 2.5 * 515 / 640) - 6, by = K.H * 0.72 + 20 - sS * 2.5 * 0.60 - (padH - 1.15) * sS * 0.25; K.burst(bx, by, '#e9b873', 18); K.burst(bx, by, '#fff', 8); K.beep(160, 0.18, 'square', 0.14); brokeT = 0.001; pieces = []; for (let i = 0; i < boards * 2; i++) pieces.push({ x: bx, y: by, vx: (i % 2 ? 1 : -1) * (90 + Math.random() * 120), vy: -160 - Math.random() * 120, r: 0, vr: (i % 2 ? 1 : -1) * (4 + Math.random() * 4), lay: (i >> 1) }); }, 140);
     setTimeout(() => { if (hits >= GOAL) { playing = false; K.say('경례!'); const r = perfect / hits; setTimeout(() => K.finish('멋진 태권도! 참 잘했어요', `${GOAL}번 힘차게 차 냈어요!`, r > 0.5 ? 3 : r > 0.2 ? 2 : 1, reset), 900); } else next(); }, 950);
   }
 });
@@ -31,19 +31,18 @@ function draw(c, W, H) {
   // 사범님 + 미트
   const px = W * 0.34, ox = W * 0.74, ph = padH || 1.15;
   K.spr('sq', ox, gy + 20, s * 2.1, { face: -1 });
-  const mx = px + s * 1.12, my = gy - ph * s * 0.95;
+  const mx = px - 0.1 * s + (0.998 - 0.326) * (s * 2.5 * 515 / 640) - 6, my = gy + 20 - s * 2.5 * 0.60 - (ph - 1.15) * s * 0.25;
   const bh = s * 0.9, bw = 16;
   const plank = (x, y, w, h, tone) => { K.rr(x, y, w, h, 3, tone, '#8a5a2b'); c.strokeStyle = '#a9743a'; c.lineWidth = 1.5; for (let g = 1; g < 4; g++) { c.beginPath(); c.moveTo(x + w * g / 4, y + 3); c.lineTo(x + w * g / 4, y + h - 3); c.stroke(); } };
   if (state !== 'bow') {
     if (brokeT <= 0) { c.save(); c.translate(mx, my); const sh = state === 'kick' ? Math.sin(K.t * 60) * 3 : 0; c.translate(sh, 0); for (let i = 0; i < boards; i++) plank(-bw / 2 + i * 10 - (boards - 1) * 5, -bh / 2, bw, bh, ['#e8c288', '#e0b676', '#d8aa68'][i]); K.rr(14, -8, 26, 16, 8, '#f2c29b'); c.restore(); }
     else for (const p of pieces) { c.save(); c.translate(p.x, p.y); c.rotate(p.r); plank(-bw / 2 - 4, -bh / 4, bw, bh / 2, '#e0b676'); c.restore(); }
   }
-  // 나: 옥쌤 교실의 달리기 소년 (차렷 → 준비 → 발차기)
+  // 나: 새 그림 (준비 자세 → 발차기). 두 그림은 크기가 같게 맞춰져 있어요.
   const bowK = state === 'bow' ? Math.sin(Math.min(1, (1.2 - bowT) / 0.6) * Math.PI) * 0.4 : 0;
-  let nm = 'run_idle', rot = bowK, dx = 0;
-  if (kick > 0 || state === 'kick') { const k = Math.sin(Math.min(1, 1 - kick) * Math.PI); nm = k > 0.15 ? 'hurdle' : 'run_idle'; rot = -(ph - 1.15) * 0.16 * k; dx = k * s * 0.45; }
-  if (state === 'kick' && kick <= 0 && hits > 0) nm = 'win';
-  const kk = nm === 'hurdle'; K.spr(nm, px + dx, gy + 20, kk ? s * 2.4 * 0.62 : s * 2.4, { rot, px: 0.45, crop: kk ? 0.6 : 1, lift: kk ? s * 0.55 : 0 });
+  const kicking = kick > 0 || state === 'kick'; const kk = kicking ? Math.sin(Math.min(1, 1 - kick) * Math.PI) : 0, isKick = kicking && kk > 0.15;
+  const hh = s * 2.5, fx = px - 0.1 * s;
+  K.spr(isKick ? 'tkd_kick' : 'tkd_ready', fx, gy + 20, hh, { rot: isKick ? 0 : bowK * 0.5, px: isKick ? 0.326 : 0.429 });
   if (state === 'pad') K.ring(mx - 4, my, 36, (RING - padT) / RING * 0.9, RING - padT < WIN ? '#25b455' : '#ff7a2f');
   K.drawParticles(1 / 60);
 }

@@ -235,11 +235,11 @@ CHERRY.forEach(([cx, cz], i) => {
 { const pa = DECOR.find((d) => d.id === 'patio'); const F = pa.size;
   for (const [tx, tz] of [[-0.305, 0.02], [0.305, 0.02]]) { const cx = pa.x + tx * F, cz = pa.z + tz * F;
     for (const a of [0, 1, 2, 3]) { const ang = a * Math.PI / 2 + Math.PI / 4, ex = cx + Math.cos(ang) * 1.55, ez = cz + Math.sin(ang) * 1.45;
-      addSpot({ kind: 'sit', x: ex, z: ez, face: Math.atan2(cx - ex, cz - ez), stand: { x: cx + Math.cos(ang) * 2.8, z: cz + Math.sin(ang) * 2.7 }, label: '앉기', ico: '☕', r: 1.7, camFront: [4.2, 6.5], say: '카페 의자에 앉았어요. 걸으면 일어나요.', tip: { x: ex, y: 2.2, z: ez } }); } } }
+      addSpot({ kind: 'sit', x: ex, z: ez, face: Math.atan2(cx - ex, cz - ez), stand: { x: cx + Math.cos(ang) * 2.8, z: cz + Math.sin(ang) * 2.7 }, label: '앉기', ico: '☕', r: 1.7, patio: true, camFront: [3.2, 3.3], camAng: Math.PI, say: '카페 의자에 앉았어요. 걸으면 일어나요.', tip: { x: ex, y: 2.2, z: ez } }); } } }
 // 수영장: 승강 의자(앉기), 출발대(올라서서 수영장 정면 보기), 물속 걷기
 const POOL = { deck: { x0: 20.4, x1: 39.6, z0: -27.6, z1: -8.4 }, water: { x0: 21.9, x1: 36.9, z0: -25.2, z1: -9.6 }, chair: { x: 37.0, z: -15.4 } };
-addSpot({ kind: 'sit', x: POOL.chair.x, z: POOL.chair.z, y: 0.95, face: -Math.PI / 2, stand: { x: 38.8, z: POOL.chair.z + 1.2 }, label: '앉기', ico: '♿', r: 2.4, camFront: [4.5, 7], say: '수영장 승강 의자예요. 휠체어 친구들이 물에 들어갈 때 써요!', tip: { x: POOL.chair.x, y: 3, z: POOL.chair.z } });
-for (const bx of [24.2, 28.6, 33.2]) addSpot({ kind: 'view', x: bx, z: -26.3, y: 3.45, face: 0, stand: { x: bx, z: -23.6 }, label: '출발대 서기', ico: '🏊', r: 1.9, say: '출발대 위에서 수영장 정면을 바라봐요! 걸으면 내려와요.', tip: { x: bx, y: 3, z: -26.3 } });
+addSpot({ kind: 'sit', x: 36.5, z: POOL.chair.z, y: 2.15, face: -Math.PI / 2, stand: { x: 38.8, z: POOL.chair.z + 1.2 }, label: '앉기', ico: '♿', r: 2.4, camFront: [4.5, 7], say: '수영장 승강 의자예요. 휠체어 친구들이 물에 들어갈 때 써요!', tip: { x: POOL.chair.x, y: 3, z: POOL.chair.z } });
+for (const bx of [24.0, 29.0, 34.0]) addSpot({ kind: 'view', x: bx, z: -26.2, y: 3.4, face: 0, stand: { x: bx, z: -23.6 }, label: '출발대 서기', ico: '🏊', r: 1.9, say: '출발대 위에서 수영장 정면을 바라봐요! 걸으면 내려와요.', tip: { x: bx, y: 3, z: -26.3 } });
 // 거리 분위기용 가로등
 for (const [lx, lz] of [[-3.2, 27], [3.2, 27], [-3.2, 20], [3.2, 20], [-16, 13.5], [14, 9.4], [-3.2, -8], [3.2, -8], [-18, -1.5], [18, 1]]) {
   place({ model: 'lamp.glb', size: 4.4, rotY: lx > 0 ? 180 : 0, x: lx, z: lz }, () => { const l = P.box(0.2, 4, 0.2, P.mat(0x55555f)); l.position.y = 2; return l; }); circles.push({ x: lx, z: lz, r: 0.35 });
@@ -434,14 +434,23 @@ let camYaw = 0, camPitch = 0.8327, camZoomK = 1, camHold = null, camMix = 0, bob
 const racer = { holder: decorHolder.racer, spot: null };
 if (racer.holder) racer.spot = addSpot({ kind: 'ride', x: DECOR.find((d) => d.id === 'racer').x, z: DECOR.find((d) => d.id === 'racer').z, r: 2.6, label: '타기', ico: '🏁', say: '파란 레이싱 휠체어예요! 타기 버튼을 눌러 보세요.', tip: { x: DECOR.find((d) => d.id === 'racer').x, y: 2.6, z: DECOR.find((d) => d.id === 'racer').z } });
 const nearSpot = () => { let best = null, bd = 1e9; for (const sp of spots) { if (sp.kind === 'ride' && riding) continue; const d = Math.hypot(player.position.x - sp.x, player.position.z - sp.z); if (d < sp.r && d < bd) { bd = d; best = sp; } } return best; };
+// 카페 파라솔(빨간 지붕)은 앉았을 때 투명하게 해서 안이 보이게 해요
+let canopyMats = null;
+function canopyFade(on) {
+  const h = decorHolder.patio; if (!h) return;
+  if (!canopyMats) { canopyMats = []; h.updateMatrixWorld(true); const bx = new THREE.Box3();
+    h.traverse((o) => { if (!o.isMesh) return; bx.setFromObject(o); if (bx.min.y < 2.3) return; // 머리 위에 있는 부분만(지붕)
+      o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => canopyMats.push(m)); }); }
+  canopyMats.forEach((m) => { m.transparent = on; m.opacity = on ? 0.22 : 1; m.depthWrite = !on; m.needsUpdate = true; });
+}
 const seatY = (sp) => sp.y ?? groundY(sp.x, sp.z);
 function sitDown(sp) {
   if (sp.kind === 'ride') return mountRacer();
-  cancelAuto(); vel.set(0, 0, 0); joy.x = joy.y = 0; seat = sp; player.position.set(sp.x, seatY(sp), sp.z); facing = sp.face; player.rotation.y = facing; say(sp.say, 4.5);
+  cancelAuto(); vel.set(0, 0, 0); joy.x = joy.y = 0; seat = sp; canopyFade(!!sp.patio); player.position.set(sp.x, seatY(sp), sp.z); facing = sp.face; player.rotation.y = facing; say(sp.say, 4.5);
 }
 function standUp() {
   if (riding) return dismountRacer();
-  if (!seat) return; const sp = seat; seat = null; if (sp.stand) player.position.set(sp.stand.x, sp.stand.y || 0, sp.stand.z); say('좋아요! 다시 둘러봐요.', 2);
+  if (!seat) return; const sp = seat; seat = null; if (sp.patio) canopyFade(false); if (sp.stand) player.position.set(sp.stand.x, sp.stand.y || 0, sp.stand.z); say('좋아요! 다시 둘러봐요.', 2);
 }
 function mountRacer() {
   cancelAuto(); vel.set(0, 0, 0); riding = true; seat = null; const c = decorCircle.racer; if (c) c.r = 0;
@@ -803,7 +812,7 @@ function frameLoop() {
   } else {
     const pit = camPitch, sat = Math.min(1, Math.max(0, pit / 0.83)), rr = 23 * dist * (0.35 + 0.65 * sat), cp = Math.cos(pit), sp = Math.sin(pit);
     tmp.set(player.position.x + Math.sin(camYaw) * cp * rr, Math.max(player.position.y + 1.0, player.position.y + sp * rr), player.position.z + Math.cos(camYaw) * cp * rr);
-    if (camMix > 0.001 && seat && seat.camFront) { const f = seat.face; tmp.lerp(tmp2.set(player.position.x + Math.sin(f) * seat.camFront[1], player.position.y + seat.camFront[0], player.position.z + Math.cos(f) * seat.camFront[1]), camMix); }
+    if (camMix > 0.001 && seat && seat.camFront) { const f = seat.face + (seat.camAng || 0); tmp.lerp(tmp2.set(player.position.x + Math.sin(f) * seat.camFront[1], player.position.y + seat.camFront[0], player.position.z + Math.cos(f) * seat.camFront[1]), camMix); }
     if (camView > 0.001) { const f = player.rotation.y; tmp.lerp(tmp2.set(player.position.x - Math.sin(f) * 6.5, player.position.y + 6.2, player.position.z - Math.cos(f) * 6.5), camView); }
     if (!camInit) { camPos.copy(tmp); camInit = true; }
     camPos.lerp(tmp, 1 - Math.exp(-(calm ? 20 : 6) * dt)); camera.position.copy(camPos);

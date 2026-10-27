@@ -75,6 +75,9 @@ const Kit = (() => {
   const load = (k, url) => { const im = new Image(); im.onload = () => { try { SP[k] = trim(im); } catch (e) { SP[k] = { img: im, sx: 0, sy: 0, sw: im.naturalWidth, sh: im.naturalHeight }; } }; im.src = url; };
   for (const k in FILES) load(k, BASE + FILES[k] + '.webp');
   load('sq', new URL('../../assets/ui/av_squirrel.webp', document.currentScript ? document.currentScript.src : location.href).href); // 학교 다람쥐 마스코트
+  // 새로 만든 그림(games/school/img): 여러 포즈가 같은 크기로 맞춰져 있어서 자르지 않고 그대로 써요
+  const IMG = new URL('img/', document.currentScript ? document.currentScript.src : location.href).href;
+  for (const k of ['swim_a', 'swim_b', 'tkd_ready', 'tkd_kick', 'judo_0', 'judo_1', 'judo_2', 'judo_3', 'judo_bow', 'item_top', 'item_pants', 'item_belt']) { const im = new Image(); im.onload = () => { SP[k] = { img: im, sx: 0, sy: 0, sw: im.naturalWidth, sh: im.naturalHeight }; }; im.src = IMG + k + '.webp'; }
   // K.spr(이름, 발 x, 발 y, 키(px), {face:-1이면 왼쪽 보기, rot, alpha, shadow, px:기준점 가로비율}) → 그려진 가로 너비
   K.spr = (name, x, y, h, o = {}) => { const a = SP[name]; if (!a) return 0; const keep = o.crop || 1, sh = a.sh * keep, w = h * a.sw / sh;
     if (o.shadow !== false) { ctx.fillStyle = '#0002'; ctx.beginPath(); ctx.ellipse(x, y + 2, w * 0.42, h * 0.045, 0, 0, 7); ctx.fill(); }

@@ -1,49 +1,46 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>유도</title><link rel="stylesheet" href="../kit.css"></head><body><script src="../kit.js"></script><script>
-// 유도: 먼저 경례! 그다음 '낙법' — 둥근 신호가 작아질 때 버튼을 눌러 팔로 매트를 탁! 안전하게 넘어지고 다시 일어나요.
-const K = Kit, GOAL = K.easy ? 3 : 5, RING = K.easy ? 2.0 : 1.4, WIN = K.easy ? 0.5 : 0.3;
-let round, state, t, slap, slapQ, perfect, playing, ripple = 0;
-function reset() { round = 0; perfect = 0; playing = true; begin('bow'); K.label('경례!'); }
-function begin(s) { state = s; t = 0; slap = 0; slapQ = 0; if (s === 'bow') K.say('먼저 서로 인사해요. 경례!'); if (s === 'grip') K.say('옷깃을 잡았어요. 신호를 기다려요'); if (s === 'ring') { K.say('신호가 작아질 때 눌러서 팔로 탁!'); K.label('낙법 탁!'); } if (s === 'fall') K.label('낙법 탁!'); }
-K.onPress(() => {
-  if (!playing) return;
-  if (state === 'bow') { begin('bowdo'); return; }
-  if ((state === 'ring' || state === 'fall') && !slap) { slap = 1; const left = RING - t; slapQ = state === 'fall' ? 0.6 : left < WIN * 0.55 ? 2 : left < WIN ? 1 : 0; if (state === 'fall') slapQ = 1; if (slapQ === 2) perfect++; K.beep(220, 0.12, 'square', 0.1); if (state === 'ring') { /* 일찍 눌러도 신호 끝에 쓰러져요 */ } }
-});
-function update(dt) {
-  if (!playing) return; t += dt; ripple = Math.max(0, ripple - dt * 2); K.hud(`${Math.min(round, GOAL)} / ${GOAL}`);
-  if (state === 'bowdo' && t > 1.1) { if (round >= GOAL) { playing = false; K.say('경례! 수고했어요'); setTimeout(() => K.finish('멋진 유도! 참 잘했어요', '안전하게 넘어지고 일어나는 법을 배웠어요!', perfect >= GOAL ? 3 : perfect >= 1 ? 2 : 1, reset), 700); } else begin('grip'); }
-  else if (state === 'grip' && t > 1.0) begin('ring');
-  else if (state === 'ring' && t > RING) { begin('fall'); }
-  else if (state === 'fall' && t > 0.55) { if (slapQ === 0) slapQ = 0.4; ripple = 1; K.burst(K.W * 0.34, K.H * 0.8, slapQ >= 1 ? '#ffd24a' : '#fff', slapQ >= 1 ? 16 : 6); K.say(slapQ >= 2 ? '완벽한 낙법! 최고예요 👍' : slapQ >= 1 ? '좋은 낙법! 잘했어요' : '괜찮아요, 다음엔 팔로 탁!'); if (slapQ >= 1) K.good(); else K.soft(); begin('lie'); }
-  else if (state === 'lie' && t > 1.4) { begin('rise'); }
-  else if (state === 'rise' && t > 1.0) { round++; if (round >= GOAL) { begin('bow'); K.say('마지막 인사! 경례!'); K.label('경례!'); } else begin('grip'); }
-}
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>유도복 입기</title><link rel="stylesheet" href="../kit.css"></head><body><script src="../kit.js"></script><script>
+// 유도: 도복 입기. 버튼을 한 번 누를 때마다 도복 한 벌씩 입고, 마지막엔 멋지게 경례! 틀리거나 늦는 일이 없어요.
+const K = Kit;
+const STEPS = [
+  { say: '먼저 도복 상의와 띠를 입어요!', label: '상의 입기!', items: ['item_top', 'item_belt'], pose: 'judo_1', done: '도복 상의와 띠 완성!' },
+  { say: '이번엔 도복 바지를 입어요!', label: '바지 입기!', items: ['item_pants'], pose: 'judo_3', done: '도복 바지까지 완성!' },
+  { say: '다 입었어요! 서로 인사해요', label: '경례!', items: [], pose: 'judo_bow', done: '경례! 멋진 유도 선수예요' }];
+let step, t, fly, pose, playing, wearT, bowT, flyT0 = 0;
 const ease = (x) => x * x * (3 - 2 * x);
+function reset() { step = 0; t = 0; fly = 0; pose = 'judo_0'; playing = true; wearT = 0; bowT = 0; K.say(STEPS[0].say); K.label(STEPS[0].label); K.hud('0 / 3'); }
+K.onPress(() => {
+  if (!playing || fly > 0) return;
+  const S = STEPS[step]; fly = 1; flyT0 = t; wearT = 0; K.beep(520 + step * 120, 0.12);
+  setTimeout(() => { pose = S.pose; wearT = 1; K.good(); K.burst(K.W * 0.34, K.H * 0.5, '#ffd24a', 18); K.say(S.done); K.hud(`${step + 1} / 3`);
+    setTimeout(() => {
+      step++; fly = 0;
+      if (step >= STEPS.length) { playing = false; setTimeout(() => K.finish('멋진 유도복! 참 잘했어요', '도복을 모두 입고 경례까지 했어요!', 3, reset), 1000); }
+      else { K.say(STEPS[step].say); K.label(STEPS[step].label); }
+    }, 900);
+  }, 650);
+});
+function update(dt) { t += dt; wearT = Math.max(0, wearT - dt * 2); }
 function draw(c, W, H) {
-  const gy = H * 0.76, s = Math.min(H, W) * 0.2; K.sky(gy, '#f8f1e2', '#fff9ee');
-  c.fillStyle = '#ece0c6'; c.fillRect(0, 0, W, gy * 0.9); c.fillStyle = '#c9b78d'; for (let x = 0; x < W; x += 140) c.fillRect(x, 0, 5, gy * 0.9); K.text('柔道', W / 2, H * 0.16, Math.min(H, W) * 0.12, '#c9b78d');
-  // 다다미 매트
+  const gy = H * 0.7, s = Math.min(H, W) * 0.2; K.sky(gy, '#f8f1e2', '#fff9ee');
+  c.fillStyle = '#ece0c6'; c.fillRect(0, 0, W, gy * 0.9); c.fillStyle = '#c9b78d'; for (let x = 0; x < W; x += 140) c.fillRect(x, 0, 5, gy * 0.9); K.text('柔道', W / 2, H * 0.14, Math.min(H, W) * 0.12, '#c9b78d');
   const cols = ['#8ec26f', '#7bb35f']; for (let i = 0; i < 8; i++) { c.fillStyle = cols[i % 2]; c.beginPath(); c.moveTo(i * W / 8 - 30, gy); c.lineTo((i + 1) * W / 8 - 30, gy); c.lineTo((i + 1) * W / 8 + 10, H); c.lineTo(i * W / 8 + 10, H); c.fill(); }
   c.fillStyle = '#c0392b'; c.fillRect(0, gy, W, 6);
-  const ux = W * 0.34, tx = W * 0.66; // 나(uke, 흰 도복) / 파트너(tori, 파란 도복)
-  const bow = state === 'bowdo' ? Math.sin(Math.min(1, t / 1.1) * Math.PI) * 0.4 : state === 'bow' ? 0 : 0;
-  const grip = (state === 'grip' || state === 'ring' || state === 'fall') ? 1 : 0;
-  // 파트너(파란 셔츠 친구)
-  const ta = state === 'fall' ? Math.min(1, t / 0.55) : 0, hs = s * 2.3;
-  K.spr('sq', tx, gy + 26, hs * 0.92, { face: -1, rot: -(bow + ta * 0.1), px: 0.5 });
-  // 나(달리기 소년): 경례 → 잡기 → 낙법 → 일어나기
-  const lieY = gy + 26 - s * 0.05;
-  let rot = bow, px = ux, py = gy + 26, nm = grip ? 'run_ready' : 'run_idle';
-  if (grip) nm = 'run_idle';
-  if (state === 'fall') { const k = ease(Math.min(1, t / 0.55)); rot = -k * Math.PI / 2; px = ux + k * hs * 0.38; nm = 'run_idle'; }
-  if (state === 'lie') { rot = -Math.PI / 2; px = ux + hs * 0.38; nm = 'run_idle'; }
-  if (state === 'rise') { const k = ease(Math.min(1, t / 1.0)); rot = -(1 - k) * Math.PI / 2; px = ux + (1 - k) * hs * 0.38; nm = k > 0.8 ? 'win' : 'run_idle'; }
-  K.spr(nm, px, py, hs, { rot, px: 0.5, shadow: state !== 'lie' });
-  // 매트 울림
-  if (ripple > 0) { c.strokeStyle = `rgba(255,255,255,${ripple})`; c.lineWidth = 6; c.beginPath(); c.ellipse(ux - s * 0.5, gy + 30, s * (1.6 - ripple), s * 0.25 * (1.6 - ripple), 0, 0, 7); c.stroke(); K.text('탁!', ux - s * 0.5, gy - s * 0.4 - (1 - ripple) * 30, 44, `rgba(216,75,42,${ripple})`); }
-  if (state === 'ring') K.ring(ux + s * 0.1, gy - s * 1.6, 34, (RING - t) / RING * 0.9, RING - t < WIN ? '#25b455' : '#ff7a2f');
+  const hh = s * 2.7, cx = W * 0.36, bob = Math.sin(t * 3) * 3 + wearT * -10;
+  K.spr(pose, cx, gy + 24 + bob, hh, { px: 0.51 });
+  K.spr('sq', W * 0.8, gy + 26, s * 2.1, { face: -1 });
+  // 입을 옷: 위에서 통통 튀며 기다리다가, 버튼을 누르면 몸으로 날아가요
+  if (playing && step < STEPS.length) {
+    const S = STEPS[step], n = S.items.length, ih = s * 1.25;
+    S.items.forEach((nm, i) => {
+      const bx = W * 0.64 + (i - (n - 1) / 2) * ih * 1.15, by = H * 0.42 + Math.sin(t * 3 + i) * 8;
+      const k = fly > 0 ? Math.min(1, (t - flyT0) / 0.65) : 0;
+      const x = bx + (cx - bx) * ease(k), y = by + (H * 0.5 - by) * ease(k), a = fly > 0 ? 1 - ease(k) : 1;
+      K.spr(nm, x, y + ih / 2, ih * (1 - 0.35 * k), { px: 0.5, shadow: false, alpha: Math.max(0, a) });
+    });
+    if (!fly) K.text('▶', W * 0.5, H * 0.42, s * 0.5, '#ff7a2f');
+  }
   K.drawParticles(1 / 60);
 }
-K.start('🥇 유도', '먼저 서로 경례!<br>그다음 둥근 신호가 작아질 때<br>큰 버튼을 눌러 팔로 매트를 탁!<br>안전하게 넘어지는 연습이에요.', reset);
+K.start('🥋 유도복 입기', '버튼을 누를 때마다<br>도복을 한 벌씩 입어요.<br>마지막엔 멋지게 경례!', () => { reset(); });
 K.run(update, draw);
 </script></body></html>

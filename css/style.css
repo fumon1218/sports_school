@@ -216,7 +216,7 @@ body[data-mode="world"] #treasure-bar{display:flex}
   #start{padding:8px;font-size:18px;border-radius:14px;box-shadow:0 4px 0 #168a3a}
   #pad{width:112px;border-width:4px}
   .lobby-top{gap:8px;flex-wrap:nowrap}#lobby-back,.lobby-top .home-btn,.game-top button{white-space:nowrap}.lobby-top h2{font-size:18px;white-space:nowrap}
-  #sports{grid-template-columns:repeat(4,1fr);gap:8px;margin:6px auto;align-content:start}
+  #sports{grid-template-columns:repeat(5,1fr);gap:8px;margin:6px auto;align-content:start}
   .sport{border-width:3px;border-radius:16px;padding:4px 4px 6px;box-shadow:0 3px 0 var(--c),0 5px 10px #0003}.sport>img{width:min(100%,clamp(36px,15vh,60px))}.sport b{font-size:14px}.sport small{display:none}
   .lobby-hint{padding:4px 12px;font-size:12px;border-radius:12px}
 }

@@ -20,6 +20,9 @@ export const SPORTS = [
   { id: 'tabletennis', name: '탁구', color: '#f2b705', open: true, url: GAME('tabletennis'), sub: '작은 공을 주고받아요' },
   { id: 'badminton', name: '배드민턴', color: '#5bbf5a', open: true, url: SCH('badminton'), sub: '셔틀콕을 주고받아요' },
   { id: 'taekwondo', name: '태권도', color: '#9b7be0', open: true, url: SCH('taekwondo'), sub: '발차기로 송판을 격파해요' },
+];
+// 선수가 없어서 잠시 쉬는 종목(다시 열 때는 위 SPORTS 에 옮겨 넣으면 돼요)
+export const SPORTS_PAUSED = [
   { id: 'tennis', name: '테니스', color: '#ec6fa0', open: true, url: GAME('tennis'), sub: '공을 라켓으로 쳐요' },
   { id: 'judo', name: '유도', color: '#4f86e0', open: true, url: SCH('judo'), sub: '안전하게 넘어지고 일어나요' },
 ];
@@ -97,7 +100,7 @@ export const INFO = {
   about: [
     { h: '체육 중점 특수학교', p: '운동을 통해 몸과 마음이 함께 자라는 특수학교예요. 학생 한 사람 한 사람의 속도에 맞춰 배우고 도전해요.' },
     { h: '모두가 함께하는 시설', p: '문턱 없는 입구와 완만한 경사로, 휠체어 이용 학생을 위한 시설을 갖춘 건물로 만들고 있어요.' },
-    { h: '육성 종목 7개', p: '수영, 육상, 탁구, 배드민턴, 태권도, 테니스, 유도를 배우고 체험해요.' },
+    { h: '육성 종목 5개', p: '수영, 육상, 탁구, 배드민턴, 태권도를 배우고 체험해요.' },
     { h: '실패해도 괜찮아요', p: '점수를 깎거나 탈락시키지 않아요. 도전하는 모습을 함께 응원해요.' },
   ],
   sports: {

@@ -295,6 +295,27 @@ const courtFloor = (() => {
   return { m, st, f };
 })();
 
+/* ---------- 학교 소식 QR: 마을 광장 푸른 홀로그램 간판 ---------- */
+const QR_URL = 'https://m.site.naver.com/2jUAz';
+const VIDEOS = [['학교 홍보영상 1', 'https://band.us/band/103245658/post/22'], ['학교 홍보영상 2', 'https://band.us/band/103245658/post/18'], ['학교 홍보영상 3', 'https://band.us/band/103245658/post/14']];
+const qrSpot = (() => {
+  const h = decorHolder.holo2, qx = h ? h.position.x : 5.0, qz = h ? h.position.z : 6.4;
+  if (h) {
+    const tex = new THREE.TextureLoader().load('assets/ui/qr_school.png'); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.96 })); face.position.set(0, 2.7, 0.3); h.add(face);
+    const lb = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5), new THREE.MeshBasicMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 116; const x = c.getContext('2d'); x.fillStyle = '#0b5fa8cc'; x.fillRect(0, 0, 512, 116); x.fillStyle = '#e8fbff'; x.font = '900 58px "Pretendard","Noto Sans KR",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('학교 소식 · 영상', 256, 62); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(), transparent: true })); lb.position.set(0, 4.05, 0.3); h.add(lb);
+  }
+  return addSpot({ kind: 'qr', x: qx, z: qz + 2.0, r: 2.9, label: 'QR·영상', ico: '📱', hint: '홀로그램 간판이에요! 버튼을 누르면 QR과 홍보영상을 볼 수 있어요.', tip: { x: qx, y: 4.6, z: qz } });
+})();
+const qrModal = (() => {
+  const el = document.createElement('div'); el.id = 'qr-modal'; el.hidden = true;
+  el.innerHTML = '<div class="qr-card"><h2>📱 우리 학교 소식 보기</h2><img src="assets/ui/qr_school.png" alt="학교 소식 QR 코드"><p>휴대폰 카메라로 QR을 찍어 보세요.</p><div class="qr-links"><a class="qr-go" href="' + QR_URL + '" target="_blank" rel="noopener">바로 가기</a>' + VIDEOS.map((v) => '<a class="qr-vid" href="' + v[1] + '" target="_blank" rel="noopener">▶ ' + v[0] + '</a>').join('') + '</div><button type="button" class="qr-close">닫기</button></div>';
+  document.body.appendChild(el); const close = () => { el.hidden = true; };
+  el.querySelector('.qr-close').addEventListener('click', close); el.addEventListener('pointerdown', (e) => { if (e.target === el) close(); });
+  return { el, open: () => { el.hidden = false; }, close, get isOpen() { return !el.hidden; } };
+})();
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && qrModal.isOpen) qrModal.close(); });
+
 /* ---------- 주인공, 친구, 안내원 ---------- */
 const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelchair: { model: 'wheelchair.glb', size: 2.2, name: '휠체어 선수' },
   girl: { model: 'girl.glb', size: 2.3, name: '여학생' }, girl_wheelchair: { model: 'girl_wheelchair.glb', size: 2.2, name: '휠체어 여학생' },
@@ -536,7 +557,8 @@ function startGuide() { const t = nextTarget(); routeTarget = t; route = findPat
 function doAction() {
   if (mode !== 'world') return;
   if (seat || riding) return standUp();
-  const sp0 = nearSpot(); if (sp0) return sitDown(sp0);
+  const sp0 = nearSpot(); if (sp0 && sp0.kind === 'qr') return qrModal.open();
+  if (sp0) return sitDown(sp0);
   if (tn.active) { if (!tn.press()) say('공이 가까이 올 때 눌러요! 노란 동그라미 근처에 서 보세요.', 2.4); return; }
   if (nearBall() && onField()) { const dx = Math.sin(facing), dz = Math.cos(facing); const bx = ball.x - player.position.x, bz = ball.z - player.position.z; kickBall(15, dx + bx * 0.15, dz + bz * 0.15); say('뻥! ⚽ 골대에 넣어 봐요!', 2); return; }
   const z = zoneNear(player.position.x, player.position.z, 0.6);
@@ -719,7 +741,7 @@ let topDown = false, camDbg = null;
 const tipEl = document.createElement('button'); tipEl.id = 'zone-tip'; tipEl.hidden = true; tipEl.type = 'button';
 tipEl.innerHTML = '<span class="ti"></span><b></b><i>▼</i>'; document.body.appendChild(tipEl);
 let tipZone = null; const tipV = new THREE.Vector3();
-tipEl.addEventListener('click', (e) => { e.stopPropagation(); if (tipZone) { if (tipZone.ico) { if (seat || riding) standUp(); else sitDown(tipZone); } else enterZone(tipZone); } });
+tipEl.addEventListener('click', (e) => { e.stopPropagation(); if (tipZone) { if (tipZone.kind === 'qr') qrModal.open(); else if (tipZone.ico) { if (seat || riding) standUp(); else sitDown(tipZone); } else enterZone(tipZone); } });
 tipEl.addEventListener('pointerdown', (e) => e.stopPropagation());
 function updateTip() {
   let best = null, bd = 1e9;

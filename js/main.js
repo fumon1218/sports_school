@@ -316,6 +316,38 @@ const qrModal = (() => {
 })();
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && qrModal.isOpen) qrModal.close(); });
 
+/* ---------- 전시관 앞 홍보영상 (유튜브) ---------- */
+const PROMO_YT = 'izRNn6O9UuA';
+const videoSpot = (() => {
+  const ex = BUILDINGS.find((b) => b.id === 'expo') || { x: -15, z: -10.5 };
+  let vx = ex.x + 2.5, vz = ex.z + 7;
+  for (const [dx, dz] of [[0, 0], [0, 2], [2, 0], [-2, 0], [0, 4], [3, 2], [-3, 2]]) { if (!blockedAt(vx + dx, vz + dz, 1.6)) { vx += dx; vz += dz; break; } }
+  const g = new THREE.Group(); g.position.set(vx, 0, vz); g.rotation.y = 0; scene.add(g);
+  const frame = new THREE.MeshStandardMaterial({ color: 0x1b2a49, roughness: 0.6 });
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.3), frame); post.position.y = 0.8; post.castShadow = true; g.add(post);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.2, 0.2), frame); board.position.y = 2.7; board.castShadow = true; g.add(board);
+  const cv = document.createElement('canvas'); cv.width = 576; cv.height = 352; const x = cv.getContext('2d');
+  const gr = x.createLinearGradient(0, 0, 576, 352); gr.addColorStop(0, '#1d6fd8'); gr.addColorStop(1, '#17c3a4'); x.fillStyle = gr; x.fillRect(0, 0, 576, 352);
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(288, 150, 74, 0, 7); x.fill(); x.fillStyle = '#1d6fd8'; x.beginPath(); x.moveTo(266, 112); x.lineTo(266, 188); x.lineTo(332, 150); x.closePath(); x.fill();
+  x.fillStyle = '#fff'; x.font = '900 52px "Pretendard","Noto Sans KR",sans-serif'; x.textAlign = 'center'; x.fillText('학교 홍보영상', 288, 290);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.08), new THREE.MeshBasicMaterial({ map: t })); scr.position.set(0, 2.7, 0.11); g.add(scr);
+  const glow = glowSprite(0x6fd0ff, 5, 0.25); glow.position.set(0, 2.7, -0.2); g.add(glow); FX.push((tt, calm) => { glow.material.opacity = calm ? 0.25 : 0.18 + (Math.sin(tt * 2) * 0.5 + 0.5) * 0.12; });
+  for (const [dx, id, sz] of [[-2.7, 'trophy.glb', 1.9], [2.7, 'medals.glb', 1.5]]) loadModel(id).then((src) => { if (!src) return; const m = fitModel(src, sz); m.position.set(dx, 0, 0.6); g.add(m); });
+  const lamp = glowSprite(0xffe08a, 2.2, 0.35); lamp.position.set(0, 0.4, 1.6); g.add(lamp);
+  addBox(vx, vz, 3.8, 0.7);
+  return addSpot({ kind: 'video', x: vx, z: vz + 2.2, r: 3, label: '영상 보기', ico: '▶️', hint: '학교 홍보영상이에요! 영상 보기 버튼을 눌러 보세요.', tip: { x: vx, y: 4.5, z: vz } });
+})();
+const videoModal = (() => {
+  const el = document.createElement('div'); el.id = 'video-modal'; el.hidden = true;
+  el.innerHTML = '<div class="video-card"><div class="video-box"></div><button type="button" class="qr-close">닫기</button></div>';
+  document.body.appendChild(el); const box = el.querySelector('.video-box');
+  const close = () => { el.hidden = true; box.innerHTML = ''; };
+  el.querySelector('.qr-close').addEventListener('click', close); el.addEventListener('pointerdown', (e) => { if (e.target === el) close(); });
+  return { el, close, get isOpen() { return !el.hidden; }, open: () => { box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + PROMO_YT + '?autoplay=1&rel=0&playsinline=1" title="학교 홍보영상" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><a class="video-yt" href="https://www.youtube.com/watch?v=' + PROMO_YT + '" target="_blank" rel="noopener">영상이 안 나오면 유튜브에서 보기</a>'; el.hidden = false; } };
+})();
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && videoModal.isOpen) videoModal.close(); });
+
 /* ---------- 주인공, 친구, 안내원 ---------- */
 const AVATARS = { boy: { model: 'boy.glb', size: 2.4, name: '소년' }, wheelchair: { model: 'wheelchair.glb', size: 2.2, name: '휠체어 선수' },
   girl: { model: 'girl.glb', size: 2.3, name: '여학생' }, girl_wheelchair: { model: 'girl_wheelchair.glb', size: 2.2, name: '휠체어 여학생' },
@@ -558,6 +590,7 @@ function doAction() {
   if (mode !== 'world') return;
   if (seat || riding) return standUp();
   const sp0 = nearSpot(); if (sp0 && sp0.kind === 'qr') return qrModal.open();
+  if (sp0 && sp0.kind === 'video') return videoModal.open();
   if (sp0) return sitDown(sp0);
   if (tn.active) { if (!tn.press()) say('공이 가까이 올 때 눌러요! 노란 동그라미 근처에 서 보세요.', 2.4); return; }
   if (nearBall() && onField()) { const dx = Math.sin(facing), dz = Math.cos(facing); const bx = ball.x - player.position.x, bz = ball.z - player.position.z; kickBall(15, dx + bx * 0.15, dz + bz * 0.15); say('뻥! ⚽ 골대에 넣어 봐요!', 2); return; }
@@ -741,7 +774,7 @@ let topDown = false, camDbg = null;
 const tipEl = document.createElement('button'); tipEl.id = 'zone-tip'; tipEl.hidden = true; tipEl.type = 'button';
 tipEl.innerHTML = '<span class="ti"></span><b></b><i>▼</i>'; document.body.appendChild(tipEl);
 let tipZone = null; const tipV = new THREE.Vector3();
-tipEl.addEventListener('click', (e) => { e.stopPropagation(); if (tipZone) { if (tipZone.kind === 'qr') qrModal.open(); else if (tipZone.ico) { if (seat || riding) standUp(); else sitDown(tipZone); } else enterZone(tipZone); } });
+tipEl.addEventListener('click', (e) => { e.stopPropagation(); if (tipZone) { if (tipZone.kind === 'qr') qrModal.open(); else if (tipZone.kind === 'video') videoModal.open(); else if (tipZone.ico) { if (seat || riding) standUp(); else sitDown(tipZone); } else enterZone(tipZone); } });
 tipEl.addEventListener('pointerdown', (e) => e.stopPropagation());
 function updateTip() {
   let best = null, bd = 1e9;
